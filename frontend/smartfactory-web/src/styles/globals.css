@@ -5,28 +5,54 @@
 
 /* ─── TOKENS ─────────────────────────────────── */
 :root {
-  --bg0:     #060a0e;
-  --bg1:     #0b1017;
-  --bg2:     #101820;
-  --bg3:     #162030;
-  --border:  #1c2d3f;
+
+  /* ===== CORES PRINCIPAIS ===== */
+
+  --primary: #d52029;
+  --primary-dark: #b4252c;
+  --primary-light: #ff4d4d;
+  --primary-soft: #ffe0e0;
+
+  /* ===== BACKGROUNDS (Dark UI) ===== */
+
+  --bg0: #060a0e;
+  --bg1: #0b1017;
+  --bg2: #101820;
+  --bg3: #162030;
+
+  /* ===== BACKGROUNDS (Site claro) ===== */
+
+  --bg-light: #f5f5f7;
+  --bg-dark: #1a1a1a;
+
+  /* ===== BORDAS ===== */
+
+  --border: #1c2d3f;
   --border2: #243650;
+  --border-light: #e0e0e0;
 
-  --cyan:    #00e5ff;
-  --cyan2:   #009ec2;
-  --green:   #00e676;
-  --orange:  #ff9100;
-  --red:     #ff3d3d;
-  --yellow:  #ffd740;
-  --blue:    #448aff;
+  /* ===== CORES DE STATUS (dashboard / industrial) ===== */
 
-  --text:    #b8cdd8;
-  --text2:   #607080;
-  --text3:   #344555;
+  --success: #00e676;
+  --warning: #ff9100;
+  --danger: #ff3d3d;
+  --info: #448aff;
+  --alert: #ffd740;
+
+  /* ===== TEXTOS ===== */
+
+  --text-main: #b8cdd8;
+  --text-muted: #607080;
+  --text-dark: #333;
+  --text-light: #ffffff;
+  --text-soft: #344555;
+
+  /* ===== TIPOGRAFIA ===== */
 
   --font-display: 'Rajdhani', sans-serif;
-  --font-mono:    'Share Tech Mono', monospace;
-  --font-body:    'Barlow Condensed', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+  --font-body: 'Barlow Condensed', sans-serif;
+
 }
 
 /* ─── BASE ───────────────────────────────────── */
