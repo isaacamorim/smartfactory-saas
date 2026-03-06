@@ -1,0 +1,202 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;800;900&display=swap');
+
+/* ─── RESET ─────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── TOKENS ─────────────────────────────────── */
+:root {
+  --bg0:     #060a0e;
+  --bg1:     #0b1017;
+  --bg2:     #101820;
+  --bg3:     #162030;
+  --border:  #1c2d3f;
+  --border2: #243650;
+
+  --cyan:    #00e5ff;
+  --cyan2:   #009ec2;
+  --green:   #00e676;
+  --orange:  #ff9100;
+  --red:     #ff3d3d;
+  --yellow:  #ffd740;
+  --blue:    #448aff;
+
+  --text:    #b8cdd8;
+  --text2:   #607080;
+  --text3:   #344555;
+
+  --font-display: 'Rajdhani', sans-serif;
+  --font-mono:    'Share Tech Mono', monospace;
+  --font-body:    'Barlow Condensed', sans-serif;
+}
+
+/* ─── BASE ───────────────────────────────────── */
+body {
+  background: var(--bg0);
+  color: var(--text);
+  font-family: var(--font-body);
+  overflow: hidden;
+}
+
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: var(--bg1); }
+::-webkit-scrollbar-thumb { background: var(--border2); }
+
+/* ─── TYPOGRAPHY HELPERS ─────────────────────── */
+.font-display { font-family: var(--font-display); }
+.font-mono    { font-family: var(--font-mono); }
+.font-body    { font-family: var(--font-body); }
+
+/* ─── ANIMATIONS ─────────────────────────────── */
+@keyframes blink       { 0%,100%{opacity:1}  50%{opacity:.2} }
+@keyframes scanH       { 0%,100%{opacity:.2} 50%{opacity:.8} }
+@keyframes slideUp     { from{transform:translateY(14px);opacity:0} to{transform:translateY(0);opacity:1} }
+@keyframes fadeIn      { from{opacity:0} to{opacity:1} }
+@keyframes march       { from{background-position:0 0} to{background-position:40px 0} }
+@keyframes ticker-scroll { from{transform:translateX(100vw)} to{transform:translateX(-100%)} }
+@keyframes pulse-dot   { 0%{transform:scale(1);opacity:1} 100%{transform:scale(2.5);opacity:0} }
+@keyframes loadFill    { from{width:0} to{width:100%} }
+
+.animate-up   { animation: slideUp .35s ease both; }
+.animate-fade { animation: fadeIn .3s ease both; }
+
+/* ─── UTILITY CLASSES ────────────────────────── */
+.hex { clip-path: polygon(20% 0%,80% 0%,100% 20%,100% 80%,80% 100%,20% 100%,0% 80%,0% 20%); }
+
+/* scanlines overlay */
+.scanlines::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.025) 2px,rgba(0,0,0,.025) 4px);
+  pointer-events: none; z-index: 9999;
+}
+
+/* grid background */
+.grid-bg {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(0,229,255,.022) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,255,.022) 1px,transparent 1px);
+  background-size: 44px 44px;
+}
+
+/* ─── SF CARD ────────────────────────────────── */
+.sf-card {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+.sf-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.sf-card-title {
+  font-family: var(--font-display);
+  font-size: 13px; font-weight: 700;
+  letter-spacing: 2.5px; text-transform: uppercase; color: #fff;
+}
+.sf-card-body { padding: 20px; }
+
+/* ─── BADGES ─────────────────────────────────── */
+.badge {
+  font-family: var(--font-mono);
+  font-size: 9px; letter-spacing: 2px; padding: 3px 8px;
+  border: 1px solid currentColor; text-transform: uppercase;
+}
+.badge-live   { color: var(--green);  animation: blink 2s infinite; }
+.badge-warn   { color: var(--orange); }
+.badge-error  { color: var(--red); }
+.badge-info   { color: var(--cyan); }
+
+/* ─── STATUS CHIPS ───────────────────────────── */
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 9px; letter-spacing: 1.5px;
+  padding: 3px 8px; border: 1px solid currentColor;
+  text-transform: uppercase;
+}
+.chip::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+.chip-green  { color: var(--green);  }
+.chip-green::before { animation: blink 1.5s infinite; }
+.chip-red    { color: var(--red);    }
+.chip-orange { color: var(--orange); }
+.chip-gray   { color: var(--text3);  }
+.chip-cyan   { color: var(--cyan);   }
+
+/* ─── BUTTONS ────────────────────────────────── */
+.btn {
+  cursor: pointer; transition: all .2s;
+  font-family: var(--font-display); font-weight: 700;
+  letter-spacing: 2px; border: none; text-transform: uppercase;
+}
+.btn-primary {
+  background: transparent; border: 1px solid var(--cyan);
+  color: var(--cyan); padding: 9px 20px; font-size: 13px;
+}
+.btn-primary:hover { background: rgba(0,229,255,.1); box-shadow: 0 0 16px rgba(0,229,255,.2); }
+
+.btn-danger {
+  background: transparent; border: 1px solid var(--red);
+  color: var(--red); padding: 9px 20px; font-size: 13px;
+}
+.btn-danger:hover { background: rgba(255,61,61,.1); }
+
+.btn-ghost {
+  background: transparent; border: 1px solid var(--border2);
+  color: var(--text2); padding: 9px 20px; font-size: 13px;
+}
+.btn-ghost:hover { border-color: var(--text); color: var(--text); }
+
+.btn-solid {
+  background: var(--cyan); border: 1px solid var(--cyan);
+  color: var(--bg0); padding: 10px 24px; font-size: 14px;
+}
+.btn-solid:hover { background: #00ccee; box-shadow: 0 0 20px rgba(0,229,255,.4); }
+
+/* ─── INPUTS ─────────────────────────────────── */
+.sf-input {
+  width: 100%; background: var(--bg3);
+  border: 1px solid var(--border2); color: #fff;
+  padding: 10px 14px;
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 1px;
+  outline: none; transition: border-color .2s, box-shadow .2s;
+}
+.sf-input:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(0,229,255,.1); }
+.sf-input::placeholder { color: var(--text3); }
+
+.sf-select {
+  width: 100%; background: var(--bg3);
+  border: 1px solid var(--border2); color: #fff;
+  padding: 10px 14px;
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 1px;
+  outline: none; cursor: pointer; appearance: none;
+}
+.sf-select:focus { border-color: var(--cyan); }
+
+/* ─── TABLE ──────────────────────────────────── */
+.sf-table { width: 100%; border-collapse: collapse; }
+.sf-table thead tr { background: var(--bg2); border-bottom: 1px solid var(--border2); }
+.sf-table th {
+  text-align: left; padding: 11px 16px;
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 3px; color: var(--text3);
+}
+.sf-table tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; cursor: pointer; }
+.sf-table tbody tr:hover { background: rgba(0,229,255,.03); }
+.sf-table td { padding: 13px 16px; font-size: 13px; color: var(--text); }
+.sf-table .serial { font-family: var(--font-mono); font-size: 11px; color: var(--cyan); letter-spacing: 1px; }
+
+/* ─── PROGRESS ───────────────────────────────── */
+.prog-track { height: 5px; background: var(--border2); overflow: hidden; }
+.prog-fill  { height: 100%; transition: width 1.2s ease; }
+
+/* ─── PAGE TITLE ─────────────────────────────── */
+.page-title {
+  font-family: var(--font-display);
+  font-size: 28px; font-weight: 700;
+  letter-spacing: 3px; color: #fff; text-transform: uppercase;
+}
+.page-sub {
+  font-family: var(--font-mono);
+  font-size: 10px; color: var(--text3); letter-spacing: 2px; margin-top: 4px;
+}

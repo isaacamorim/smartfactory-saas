@@ -1,0 +1,222 @@
+agora eu tenho um projeto um pouco diferente dos q eu já fiz,
+
+bom dia fera
+como vai essa força?
+
+
+
+na empresa q eu trabalho tem uma maquina de empacotamento de feijão "eva 1000" ela tem um clp, q comanda a maquina, xp 300 ou xp 340, eu vou precisar pegar os sinais que o clp vai mandar,
+
+eu preciso coletar dados da porta do clp (dados) tipo maquina ligada.
+
+precisamos criar uma conexão mqtt e enviar para node red, para enviar para um banco de dados,
+
+eu ainda não sei quantos sinais vamos armazenar, mas vou disponibilizar um servidor so para isso, 
+
+o objetivo disso no final é criar um OEE para os donos das maquinas para monitoramento e mais
+
+o desenho q eu fiz é:
+
+
+clp -> identificar portas -> mqtt -> node red -> banco de dados -> Grafana
+
+
+coisas q temos para trabalhar:
+
+clp altus xp 300 tem entrada de rede
+
+servidor para configurar do absoluto zero
+
+Gateway TRB140 (Gateway 4G)
+
+programa q configura o clp da altus
+
+
+CLP XP300/XP340
+  └── Modbus TCP (Ethernet)
+        └── TRB140 (lê os registradores Modbus e publica via MQTT 4G)
+              └── MQTT Broker no servidor (ex: Mosquitto)
+                    └── Node-RED (subscribe, trata os dados)
+                          └── Banco de Dados (InfluxDB ou PostgreSQL)
+                                └── Grafana (dashboards OEE)
+
+
+
+
+oq precisamos ver:
+
+alarmes
+peso do cknh
+produção, para vermos diariamente e semanal números de pacotes
+horas de trablaho, para vermos diariamente e semanal
+velocidade da maquina
+histórico de login de acesso na maquina
+pacotes reprovados
+peso, mínimo máximo médio
+status da maquina
+
+
+soq temos q pensar q em um empresa grande pode ter varias maquinas, no nosso caso empacotadeira (eva 1000) e enfardadeira (enfnh) ai teria q ter um controle macro e um mais detalhado de qualquer um
+
+
+
+
+
+
+
+CLP → TRB140 → MQTT
+                     ↓
+                Node-RED
+                     ↓
+        (cálculo OEE aqui)
+                     ↓
+                InfluxDB
+                     ↓
+                Grafana
+
+Node-RED:
+
+Recebe dados crus
+
+Normaliza
+
+Calcula OEE
+
+Escreve no banco
+
+Banco não precisa calcular nada pesado.
+
+
+
+
+
+
+Mini MES industrial
+
+Com:
+
+Login operador
+
+Parâmetro alterado
+
+Histórico
+
+OEE
+
+Alarmes
+
+Isso é além de “monitoramento”.
+
+
+
+
+
+-------------------------------------------------------------
+-------------------------------------------------------------
+conexão ssh
+-------------------------------------------------------------
+-------------------------------------------------------------
+
+## Acesso
+ssh root@191.252.217.250
+
+## Senha
+siteNh!25
+
+-------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+O serviço correto é:
+
+influxdb.service
+
+E ele está executando:
+
+/usr/bin/influxd
+
+
+versão: InfluxDB v2.7.5 (git: 09a9607fd9) build_date: 2024-01-05T17:17:04Z
+
+Isso significa que você está com InfluxDB 2.x já rodando sob o serviço influxdb.
+
+Está tudo certo.
+
+
+
+
+
+
+-------------------------------------------------------------
+-------------------------------------------------------------
+InfluxDB
+-------------------------------------------------------------
+-------------------------------------------------------------
+usuário: admin
+senha: siteNh!25
+
+organização: smart_factory
+
+bucket: factory_system
+
+-------------------------------------------------------------
+bucket
+-------------------------------------------------------------
+
+👉 1 bucket único para dados operacionais
+
+Por quê?
+
+Porque você quer estrutura assim:
+
+Empresa
+   └── Linhas
+         └── Máquinas
+               └── Dados ao longo do tempo
+
+smart_factory
+   └── bucket: factory_system
+         empresa=NH
+         linha=Feijao
+         maquina=EVA1000
+
+Isso não precisa ser bucket separado.
+
+No Influx, fazemos isso com:
+
+Tags (não buckets)
+
+
+
+##Este token habilita privilégios de superusuário como criar usuários, orgs, etc:
+o2jqRCm0u4DNKSBS_516sGXecVbZQqzXhiPmWxbVOej4UTx_6jQyTPTeu_ZNmLnZhbqnLXFLB1Tq4z93kAOjkw==
+
+
+## api token novo:
+ramR7XtQIGsmpDGwrVixudC4cWj6BUH8BhoylPg33BjGGOBA6_jFgK6tnbRyKEclteJ41wefidEVx_N72FqZsg==
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

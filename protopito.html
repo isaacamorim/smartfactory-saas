@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OEE Industrial — Painel de Controle</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0c10;
+            --bg2: #0f1218;
+            --bg3: #161b24;
+            --border: #1e2733;
+            --border2: #263040;
+            --text: #e8edf5;
+            --text2: #8494a8;
+            --text3: #4d5f72;
+            --green: #00e5a0;
+            --green-dim: rgba(0, 229, 160, 0.12);
+            --yellow: #f5c518;
+            --yellow-dim: rgba(245, 197, 24, 0.12);
+            --red: #ff4b5c;
+            --red-dim: rgba(255, 75, 92, 0.12);
+            --blue: #3d9bff;
+            --blue-dim: rgba(61, 155, 255, 0.12);
+            --orange: #ff8c42;
+            --orange-dim: rgba(255, 140, 66, 0.12);
+            --accent: #00e5a0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            height: 56px;
+            background: var(--bg2);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .topbar-logo {
+            font-family: 'Space Mono', monospace;
+            font-size: 13px;
+            color: var(--accent);
+            letter-spacing: 0.08em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .topbar-logo span {
+            color: var(--text2);
+        }
+
+        .topbar-nav {
+            display: flex;
+            gap: 4px;
+        }
+
+        .nav-btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: var(--text2);
+            transition: all 0.15s;
+        }
+
+        .nav-btn:hover {
+            background: var(--bg3);
+            color: var(--text);
+        }
+
+        .nav-btn.active {
+            background: var(--green-dim);
+            color: var(--green);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .time-chip {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--text3);
+            background: var(--bg3);
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .layout {
+            display: flex;
+            height: calc(100vh - 56px);
+        }
+
+        .sidebar {
+            width: 56px;
+            background: var(--bg2);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 0;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .side-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+            color: var(--text3);
+            transition: all 0.15s;
+        }
+
+        .side-icon:hover {
+            background: var(--bg3);
+            color: var(--text2);
+        }
+
+        .side-icon.active {
+            background: var(--green-dim);
+            color: var(--green);
+        }
+
+        .main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .machine-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .machine-label {
+            font-size: 11px;
+            color: var(--text3);
+            font-family: 'Space Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-right: 4px;
+        }
+
+        .machine-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border2);
+            background: var(--bg3);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.15s;
+            color: var(--text2);
+        }
+
+        .machine-pill .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+        }
+
+        .machine-pill.active {
+            border-color: var(--green);
+            background: var(--green-dim);
+            color: var(--green);
+        }
+
+        .machine-pill.active .dot {
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+        }
+
+        .machine-pill.warn .dot {
+            background: var(--yellow);
+        }
+
+        .machine-pill.warn {
+            border-color: var(--yellow);
+            background: var(--yellow-dim);
+            color: var(--yellow);
+        }
+
+        .machine-pill.off .dot {
+            background: var(--blue);
+        }
+
+        .macro-btn {
+            margin-left: auto;
+            padding: 7px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border2);
+            background: var(--bg3);
+            color: var(--text2);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: 'Space Mono', monospace;
+            letter-spacing: 0.04em;
+        }
+
+        .macro-btn.selected {
+            border-color: var(--blue);
+            background: var(--blue-dim);
+            color: var(--blue);
+        }
+
+        .section-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            color: var(--text3);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            margin-bottom: -4px;
+            padding-left: 2px;
+        }
+
+        .oee-hero {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 12px;
+        }
+
+        .oee-circle-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            gap: 8px;
+        }
+
+        .oee-ring {
+            position: relative;
+            width: 110px;
+            height: 110px;
+        }
+
+        .oee-ring svg {
+            transform: rotate(-90deg);
+        }
+
+        .oee-ring-val {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .oee-ring-val .val {
+            font-family: 'Space Mono', monospace;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--green);
+        }
+
+        .oee-ring-val .lbl {
+            font-size: 10px;
+            color: var(--text3);
+        }
+
+        .oee-label {
+            font-size: 11px;
+            color: var(--text3);
+            font-family: 'Space Mono', monospace;
+            letter-spacing: 0.08em;
+        }
+
+        .oee-components {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .oee-comp {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .oee-comp-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .oee-comp-name {
+            font-size: 11px;
+            color: var(--text2);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .oee-comp-val {
+            font-family: 'Space Mono', monospace;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .prog-bar {
+            height: 4px;
+            background: var(--border2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .prog-fill {
+            height: 100%;
+            border-radius: 4px;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .kpi-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+        }
+
+        .kpi-card.green::before {
+            background: var(--green);
+        }
+
+        .kpi-card.yellow::before {
+            background: var(--yellow);
+        }
+
+        .kpi-card.red::before {
+            background: var(--red);
+        }
+
+        .kpi-card.blue::before {
+            background: var(--blue);
+        }
+
+        .kpi-card.orange::before {
+            background: var(--orange);
+        }
+
+        .kpi-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .kpi-name {
+            font-size: 11px;
+            color: var(--text3);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .kpi-val {
+            font-family: 'Space Mono', monospace;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .kpi-sub {
+            font-size: 11px;
+            color: var(--text3);
+        }
+
+        .kpi-delta {
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .kpi-delta.up {
+            color: var(--green);
+        }
+
+        .kpi-delta.down {
+            color: var(--red);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 9px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-family: 'Space Mono', monospace;
+            letter-spacing: 0.05em;
+            font-weight: 700;
+        }
+
+        .status-badge .dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.3
+            }
+        }
+
+        .status-badge.run {
+            background: var(--green-dim);
+            color: var(--green);
+        }
+
+        .status-badge.run .dot {
+            background: var(--green);
+        }
+
+        .status-badge.stop {
+            background: var(--red-dim);
+            color: var(--red);
+        }
+
+        .status-badge.stop .dot {
+            background: var(--red);
+            animation: none;
+        }
+
+        .status-badge.warn {
+            background: var(--yellow-dim);
+            color: var(--yellow);
+        }
+
+        .status-badge.warn .dot {
+            background: var(--yellow);
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .three-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 14px 18px 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text2);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .card-body {
+            padding: 16px 18px;
+        }
+
+        .weight-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .wstat {
+            text-align: center;
+            padding: 14px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border2);
+        }
+
+        .wstat-label {
+            font-size: 10px;
+            color: var(--text3);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 6px;
+        }
+
+        .wstat-val {
+            font-family: 'Space Mono', monospace;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .wstat-unit {
+            font-size: 10px;
+            color: var(--text3);
+            margin-top: 2px;
+        }
+
+        svg.chart {
+            width: 100%;
+            overflow: visible;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 8px 12px;
+            color: var(--text3);
+            font-size: 10px;
+            font-family: 'Space Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            border-bottom: 1px solid var(--border);
+            font-weight: 400;
+        }
+
+        .data-table td {
+            padding: 9px 12px;
+            color: var(--text2);
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .data-table tr:hover td {
+            background: var(--bg3);
+            color: var(--text);
+        }
+
+        .speed-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 0 8px;
+            gap: 4px;
+        }
+
+        .speed-val {
+            font-family: 'Space Mono', monospace;
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--green);
+        }
+
+        .gauge-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--border2);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .gauge-fill {
+            height: 100%;
+            border-radius: 6px;
+            background: linear-gradient(90deg, var(--blue), var(--green));
+        }
+
+        .week-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+            height: 60px;
+        }
+
+        .wbar-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .wbar {
+            width: 100%;
+            border-radius: 3px 3px 0 0;
+            background: var(--green-dim);
+            border: 1px solid rgba(0, 229, 160, 0.3);
+            cursor: pointer;
+        }
+
+        .wbar:hover {
+            background: var(--green);
+        }
+
+        .wbar.today {
+            background: var(--green);
+            border-color: var(--green);
+        }
+
+        .wbar-day {
+            font-size: 9px;
+            color: var(--text3);
+            font-family: 'Space Mono', monospace;
+        }
+
+        .login-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .login-row:last-child {
+            border: none;
+        }
+
+        .login-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: var(--bg3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text2);
+            flex-shrink: 0;
+            border: 1px solid var(--border2);
+        }
+
+        .login-info {
+            flex: 1;
+        }
+
+        .login-name {
+            font-size: 12px;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .login-time {
+            font-size: 10px;
+            color: var(--text3);
+            font-family: 'Space Mono', monospace;
+        }
+
+        #macro-view {
+            display: none;
+        }
+
+        #detail-view {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .macro-row {
+            display: grid;
+            grid-template-columns: 160px 90px 80px 80px 80px 80px 80px 80px;
+            gap: 0;
+            align-items: center;
+            padding: 10px 18px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .macro-row:hover {
+            background: var(--bg3);
+        }
+
+        .macro-row.header {
+            background: var(--bg3);
+        }
+
+        .macro-row.header span {
+            font-size: 10px;
+            color: var(--text3);
+            font-family: 'Space Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 400;
+        }
+
+        .macro-row span {
+            font-size: 12px;
+            color: var(--text2);
+        }
+
+        .macro-row .mname {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .macro-row:last-child {
+            border: none;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border2);
+            border-radius: 3px;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card,
+        .kpi-card,
+        .oee-circle-card,
+        .oee-comp {
+            animation: fadeUp 0.4s ease both;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="topbar">
+        <div class="topbar-logo">⬡ <span>IND</span>OEE</div>
+        <div class="topbar-nav">
+            <button class="nav-btn active">Dashboard</button>
+            <button class="nav-btn">Histórico</button>
+            <button class="nav-btn">Alarmes</button>
+            <button class="nav-btn">Relatórios</button>
+            <button class="nav-btn">Config</button>
+        </div>
+        <div class="topbar-right">
+            <div class="time-chip" id="clock">--:--:--</div>
+            <div style="font-size:12px;color:var(--text3);">Planta 01 — Linha Feijão</div>
+        </div>
+    </div>
+
+    <div class="layout">
+        <div class="sidebar">
+            <div class="side-icon active">📊</div>
+            <div class="side-icon">⚡</div>
+            <div class="side-icon">🔔</div>
+            <div class="side-icon">⚙️</div>
+            <div class="side-icon" style="margin-top:auto">👤</div>
+        </div>
+
+        <div class="main">
+
+            <div class="machine-bar">
+                <span class="machine-label">Máquinas</span>
+                <div class="machine-pill off" onclick="toggleMacro()"><span class="dot"></span>Todas (2)</div>
+                <div class="machine-pill active" id="pill-eva" onclick="selectDetail('eva')"><span
+                        class="dot"></span>EVA 1000</div>
+                <div class="machine-pill warn" id="pill-enf" onclick="selectDetail('enf')"><span
+                        class="dot"></span>ENF-NH</div>
+                <button class="macro-btn" id="macroBtn" onclick="toggleMacro()">VISÃO MACRO</button>
+            </div>
+
+            <!-- MACRO VIEW -->
+            <div id="macro-view">
+                <div class="section-title">Visão Geral — Todas as Máquinas</div>
+                <div class="card" style="margin-top:8px;">
+                    <div class="card-header">
+                        <span class="card-title">Status da Linha</span>
+                        <span class="status-badge run"><span class="dot"></span>1 RODANDO · 1 ALERTA</span>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <div class="macro-row header">
+                            <span>Máquina</span><span>Status</span><span>OEE</span><span>Pct/h</span><span>Prod.
+                                Hoje</span><span>Alarmes</span><span>Peso Médio</span><span>Velocidade</span>
+                        </div>
+                        <div class="macro-row" onclick="selectDetail('eva')">
+                            <span class="mname"><span
+                                    style="font-size:8px;color:var(--green);background:var(--green-dim);padding:2px 6px;border-radius:3px;font-family:'Space Mono',monospace">RUN</span>EVA
+                                1000</span>
+                            <span><span class="status-badge run" style="font-size:9px;"><span
+                                        class="dot"></span>ON</span></span>
+                            <span
+                                style="color:var(--green);font-family:'Space Mono',monospace;font-weight:700;">82,4%</span>
+                            <span style="font-family:'Space Mono',monospace;">1.240</span>
+                            <span style="font-family:'Space Mono',monospace;">9.380</span>
+                            <span style="color:var(--yellow);">2</span>
+                            <span style="font-family:'Space Mono',monospace;">500,3g</span>
+                            <span style="font-family:'Space Mono',monospace;">20,6/min</span>
+                        </div>
+                        <div class="macro-row" onclick="selectDetail('enf')">
+                            <span class="mname"><span
+                                    style="font-size:8px;color:var(--yellow);background:var(--yellow-dim);padding:2px 6px;border-radius:3px;font-family:'Space Mono',monospace">WARN</span>ENF-NH</span>
+                            <span><span class="status-badge warn" style="font-size:9px;"><span
+                                        class="dot"></span>WARN</span></span>
+                            <span
+                                style="color:var(--yellow);font-family:'Space Mono',monospace;font-weight:700;">71,2%</span>
+                            <span style="font-family:'Space Mono',monospace;">860</span>
+                            <span style="font-family:'Space Mono',monospace;">5.920</span>
+                            <span style="color:var(--red);">5</span>
+                            <span style="font-family:'Space Mono',monospace;">—</span>
+                            <span style="font-family:'Space Mono',monospace;">14,3/min</span>
+                        </div>
+                        <div class="macro-row" style="background:var(--bg3);border-top:1px solid var(--border);">
+                            <span style="font-size:11px;color:var(--text3);font-weight:600;">TOTAL LINHA</span>
+                            <span></span>
+                            <span
+                                style="color:var(--blue);font-family:'Space Mono',monospace;font-weight:700;">76,8%</span>
+                            <span style="font-family:'Space Mono',monospace;">2.100</span>
+                            <span style="font-family:'Space Mono',monospace;">15.300</span>
+                            <span style="color:var(--yellow);">7</span>
+                            <span></span><span></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-grid" style="margin-top:4px;">
+                    <div class="kpi-card green">
+                        <div class="kpi-top"><span class="kpi-name">Total Produzido Hoje</span><span>📦</span></div>
+                        <div class="kpi-val">15.300</div>
+                        <div style="display:flex;justify-content:space-between"><span class="kpi-sub">pacotes
+                                linha</span><span class="kpi-delta up">↑ 6,2%</span></div>
+                    </div>
+                    <div class="kpi-card blue">
+                        <div class="kpi-top"><span class="kpi-name">Horas Trabalhadas</span><span>⏱</span></div>
+                        <div class="kpi-val">7h 42min</div>
+                        <div style="display:flex;justify-content:space-between"><span class="kpi-sub">turno
+                                atual</span><span class="kpi-delta up">dentro da meta</span></div>
+                    </div>
+                    <div class="kpi-card yellow">
+                        <div class="kpi-top"><span class="kpi-name">Alarmes Ativos</span><span>🔔</span></div>
+                        <div class="kpi-val">7</div>
+                        <div style="display:flex;justify-content:space-between"><span class="kpi-sub">2
+                                críticos</span><span class="kpi-delta down">↑ 3 vs ontem</span></div>
+                    </div>
+                    <div class="kpi-card red">
+                        <div class="kpi-top"><span class="kpi-name">Reprovados Total</span><span>❌</span></div>
+                        <div class="kpi-val">148</div>
+                        <div style="display:flex;justify-content:space-between"><span class="kpi-sub">0,97%
+                                rejeição</span><span class="kpi-delta down">↑ 0,2%</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DETAIL VIEW -->
+            <div id="detail-view">
+
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div>
+                        <div style="font-size:18px;font-weight:700;color:var(--text);" id="detail-title">EVA 1000 —
+                            Empacotadeira</div>
+                        <div style="font-size:12px;color:var(--text3);margin-top:2px;">IP: 192.168.1.10 · Modbus TCP ·
+                            Slot A3 · <span style="color:var(--green);">Comunicação OK</span></div>
+                    </div>
+                    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+                        <span class="status-badge run"><span class="dot"></span>RODANDO</span>
+                        <select
+                            style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2);padding:5px 10px;border-radius:6px;font-size:12px;cursor:pointer;">
+                            <option>Hoje</option>
+                            <option>Essa Semana</option>
+                            <option>Esse Mês</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- OEE -->
+                <div class="oee-hero">
+                    <div class="oee-circle-card">
+                        <div class="oee-ring">
+                            <svg viewBox="0 0 100 100" width="110" height="110">
+                                <circle cx="50" cy="50" r="42" fill="none" stroke="#1e2733" stroke-width="8" />
+                                <circle cx="50" cy="50" r="42" fill="none" stroke="#00e5a0" stroke-width="8"
+                                    stroke-dasharray="264" stroke-dashoffset="46.5" stroke-linecap="round" />
+                            </svg>
+                            <div class="oee-ring-val">
+                                <div class="val">82%</div>
+                                <div class="lbl">OEE</div>
+                            </div>
+                        </div>
+                        <div class="oee-label">ÍNDICE GERAL</div>
+                        <div
+                            style="font-size:10px;color:var(--green);background:var(--green-dim);padding:3px 8px;border-radius:4px;font-family:'Space Mono',monospace;">
+                            ▲ ACIMA META (75%)</div>
+                    </div>
+
+                    <div class="oee-components">
+                        <div class="oee-comp">
+                            <div class="oee-comp-header"><span class="oee-comp-name">Disponibilidade</span><span
+                                    style="font-size:10px;color:var(--text3);">meta 85%</span></div>
+                            <div class="oee-comp-val" style="color:var(--green);">91,2%</div>
+                            <div class="prog-bar">
+                                <div class="prog-fill" style="width:91%;background:var(--green);"></div>
+                            </div>
+                            <div style="font-size:10px;color:var(--text3);">7h 18min rodando / 8h turno</div>
+                        </div>
+                        <div class="oee-comp">
+                            <div class="oee-comp-header"><span class="oee-comp-name">Performance</span><span
+                                    style="font-size:10px;color:var(--text3);">meta 90%</span></div>
+                            <div class="oee-comp-val" style="color:var(--yellow);">89,8%</div>
+                            <div class="prog-bar">
+                                <div class="prog-fill" style="width:89.8%;background:var(--yellow);"></div>
+                            </div>
+                            <div style="font-size:10px;color:var(--text3);">20,6/min real · 22,9/min teórico</div>
+                        </div>
+                        <div class="oee-comp">
+                            <div class="oee-comp-header"><span class="oee-comp-name">Qualidade</span><span
+                                    style="font-size:10px;color:var(--text3);">meta 98%</span></div>
+                            <div class="oee-comp-val" style="color:var(--green);">99,1%</div>
+                            <div class="prog-bar">
+                                <div class="prog-fill" style="width:99.1%;background:var(--green);"></div>
+                            </div>
+                            <div style="font-size:10px;color:var(--text3);">83 reprovados / 9.380 total</div>
+                        </div>
+
+                        <div class="oee-comp" style="grid-column:span 3;">
+                            <div
+                                style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                                <span class="oee-comp-name">Produção por Dia — Semana Atual</span>
+                                <span
+                                    style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text3);">Meta:
+                                    9.000/dia</span>
+                            </div>
+                            <div class="week-bars">
+                                <div class="wbar-wrap">
+                                    <div class="wbar" style="height:62%;">7</div>
+                                    <div class="wbar-day">SEG</div>
+                                </div>
+                                <div class="wbar-wrap">
+                                    <div class="wbar" style="height:78%;">8</div>
+                                    <div class="wbar-day">TER</div>
+                                </div>
+                                <div class="wbar-wrap">
+                                    <div class="wbar" style="height:55%;">5</div>
+                                    <div class="wbar-day">QUA</div>
+                                </div>
+                                <div class="wbar-wrap">
+                                    <div class="wbar" style="height:90%;">9</div>
+                                    <div class="wbar-day">QUI</div>
+                                </div>
+                                <div class="wbar-wrap">
+                                    <div class="wbar today" style="height:100%;"></div>
+                                    <div class="wbar-day" style="color:var(--green);">HOJ</div>
+                                </div>
+                                <div class="wbar-wrap">
+                                    <div class="wbar" style="height:5%;opacity:0.25;"></div>
+                                    <div class="wbar-day">SEX</div>
+                                </div>
+                                <div class="wbar-wrap">
+                                    <div class="wbar" style="height:5%;opacity:0.25;"></div>
+                                    <div class="wbar-day">SAB</div>
+                                </div>
+                            </div>
+                            <div
+                                style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px;color:var(--text3);">
+                                <span>Seg: 8.100 · Ter: 8.900 · Qua: 7.600 · Qui: 9.200 · <b
+                                        style="color:var(--green)">Hoj: 9.380</b></span>
+                                <span style="font-family:'Space Mono',monospace;color:var(--text2);">Semana: <b
+                                        style="color:var(--green)">43.180 pct</b></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPIs -->
+                <div class="kpi-grid">
+                    <div class="kpi-card green">
+                        <div class="kpi-top"><span class="kpi-name">Produção Hoje</span><span>📦</span></div>
+                        <div class="kpi-val">9.380</div>
+                        <div style="display:flex;justify-content:space-between"><span
+                                class="kpi-sub">pacotes</span><span class="kpi-delta up">↑ 4,2%</span></div>
+                    </div>
+                    <div class="kpi-card blue">
+                        <div class="kpi-top"><span class="kpi-name">Horas Trabalhadas</span><span>⏱</span></div>
+                        <div class="kpi-val">7h 18m</div>
+                        <div style="display:flex;justify-content:space-between"><span class="kpi-sub">turno
+                                atual</span><span class="kpi-delta">meta: 8h</span></div>
+                    </div>
+                    <div class="kpi-card yellow">
+                        <div class="kpi-top"><span class="kpi-name">Alarmes Hoje</span><span>🔔</span></div>
+                        <div class="kpi-val">2</div>
+                        <div style="display:flex;justify-content:space-between"><span class="kpi-sub">0
+                                críticos</span><span class="kpi-delta up">↓ vs ontem</span></div>
+                    </div>
+                    <div class="kpi-card red">
+                        <div class="kpi-top"><span class="kpi-name">Reprovados Hoje</span><span>❌</span></div>
+                        <div class="kpi-val">83</div>
+                        <div style="display:flex;justify-content:space-between"><span class="kpi-sub">0,88%
+                                rejeição</span><span class="kpi-delta up">↓ 0,1%</span></div>
+                    </div>
+                </div>
+
+                <!-- PESO + VELOCIDADE + ALARMES -->
+                <div class="three-col">
+                    <div class="card">
+                        <div class="card-header"><span class="card-title">Peso do Pacote (CKNH)</span><span
+                                style="font-size:10px;color:var(--text3);">Target: 500g</span></div>
+                        <div class="card-body">
+                            <div class="weight-stats">
+                                <div class="wstat" style="border-color:var(--blue);">
+                                    <div class="wstat-label">Mínimo</div>
+                                    <div class="wstat-val" style="color:var(--blue);">496,1</div>
+                                    <div class="wstat-unit">gramas</div>
+                                </div>
+                                <div class="wstat" style="border-color:var(--green);">
+                                    <div class="wstat-label">Médio</div>
+                                    <div class="wstat-val" style="color:var(--green);">500,3</div>
+                                    <div class="wstat-unit">gramas</div>
+                                </div>
+                                <div class="wstat" style="border-color:var(--orange);">
+                                    <div class="wstat-label">Máximo</div>
+                                    <div class="wstat-val" style="color:var(--orange);">504,9</div>
+                                    <div class="wstat-unit">gramas</div>
+                                </div>
+                            </div>
+                            <div style="margin-top:14px;">
+                                <svg class="chart" height="48" viewBox="0 0 300 48">
+                                    <defs>
+                                        <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#00e5a0" stop-opacity="0.3" />
+                                            <stop offset="100%" stop-color="#00e5a0" stop-opacity="0" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path
+                                        d="M0,28 L30,24 L60,30 L90,22 L120,26 L150,20 L180,24 L210,18 L240,22 L270,20 L300,24"
+                                        fill="none" stroke="#00e5a0" stroke-width="1.5" stroke-linejoin="round" />
+                                    <line x1="0" y1="24" x2="300" y2="24" stroke="#f5c518" stroke-dasharray="4,4"
+                                        stroke-width="1" opacity="0.4" />
+                                </svg>
+                                <div
+                                    style="font-size:9px;color:var(--text3);font-family:'Space Mono',monospace;margin-top:2px;">
+                                    Últimas 2h — <span style="color:var(--yellow);">--- meta 500g</span></div>
+                            </div>
+                            <div
+                                style="margin-top:10px;padding:8px;background:var(--bg3);border-radius:6px;font-size:10px;color:var(--text3);">
+                                Tolerância: ±<b style="color:var(--text2);">5g</b> · Fora da faixa: <b
+                                    style="color:var(--red);">12 pct</b> (0,13%)</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><span class="card-title">Velocidade da Máquina</span><span
+                                class="status-badge run" style="font-size:9px;"><span class="dot"></span>AO VIVO</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="speed-wrap">
+                                <div style="font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;">ATUAL
+                                </div>
+                                <div class="speed-val">20,6</div>
+                                <div style="font-size:11px;color:var(--text3);">pacotes / minuto</div>
+                                <div style="font-size:11px;color:var(--text3);margin-top:4px;">meta: <span
+                                        style="color:var(--yellow);font-weight:600;">22,9 /min</span></div>
+                                <div class="gauge-bar">
+                                    <div class="gauge-fill" style="width:90%;"></div>
+                                </div>
+                                <div style="font-size:9px;color:var(--text3);margin-top:4px;">90% da velocidade nominal
+                                </div>
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+                                <div style="padding:8px;background:var(--bg3);border-radius:6px;text-align:center;">
+                                    <div style="font-size:9px;color:var(--text3);">Min do dia</div>
+                                    <div style="font-family:'Space Mono',monospace;font-size:14px;color:var(--blue);">
+                                        14,2/min</div>
+                                </div>
+                                <div style="padding:8px;background:var(--bg3);border-radius:6px;text-align:center;">
+                                    <div style="font-size:9px;color:var(--text3);">Max do dia</div>
+                                    <div style="font-family:'Space Mono',monospace;font-size:14px;color:var(--orange);">
+                                        23,1/min</div>
+                                </div>
+                            </div>
+                            <svg class="chart" height="36" viewBox="0 0 300 36" style="margin-top:10px;">
+                                <path
+                                    d="M0,20 L30,18 L60,22 L90,14 L120,16 L150,20 L180,12 L210,16 L240,14 L270,12 L300,14"
+                                    fill="none" stroke="#3d9bff" stroke-width="1.5" stroke-linejoin="round" />
+                            </svg>
+                            <div style="font-size:9px;color:var(--text3);font-family:'Space Mono',monospace;">Tendência
+                                velocidade — últimas 2h</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><span class="card-title">Alarmes Ativos</span><span
+                                style="background:var(--yellow-dim);color:var(--yellow);font-size:10px;font-family:'Space Mono',monospace;padding:3px 8px;border-radius:4px;">2
+                                ATIVOS</span></div>
+                        <div class="card-body" style="padding:0;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Descrição</th>
+                                        <th>Hora</th>
+                                        <th>Tipo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="color:var(--yellow);font-weight:600;">A-042</td>
+                                        <td>Peso fora da faixa</td>
+                                        <td>14:23</td>
+                                        <td><span class="status-badge warn"
+                                                style="font-size:9px;padding:2px 6px;">WARN</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color:var(--yellow);font-weight:600;">A-017</td>
+                                        <td>Velocidade abaixo</td>
+                                        <td>13:58</td>
+                                        <td><span class="status-badge warn"
+                                                style="font-size:9px;padding:2px 6px;">WARN</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div style="padding:12px 16px;">
+                                <div
+                                    style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'Space Mono',monospace;">
+                                    HISTÓRICO DO DIA</div>
+                                <table class="data-table" style="font-size:11px;">
+                                    <thead>
+                                        <tr>
+                                            <th>Cód</th>
+                                            <th>Descrição</th>
+                                            <th>Hora</th>
+                                            <th>Duração</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td style="color:var(--red);">E-001</td>
+                                            <td>Parada emergência</td>
+                                            <td>10:14</td>
+                                            <td>18min</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color:var(--text3);">A-033</td>
+                                            <td>Sensor de nível</td>
+                                            <td>09:02</td>
+                                            <td>4min</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color:var(--text3);">A-019</td>
+                                            <td>Pressão baixa</td>
+                                            <td>07:45</td>
+                                            <td>2min</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LOGINS + REPROVADOS -->
+                <div class="two-col">
+                    <div class="card">
+                        <div class="card-header"><span class="card-title">Histórico de Acesso — Máquina</span><span
+                                style="font-size:10px;color:var(--text3);">Hoje</span></div>
+                        <div class="card-body">
+                            <div class="login-row">
+                                <div class="login-avatar">JM</div>
+                                <div class="login-info">
+                                    <div class="login-name">João Marcos</div>
+                                    <div class="login-time">Login: 06:02 · Logout: 14:05 · Turno 1</div>
+                                </div>
+                                <span
+                                    style="font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;">OPERADOR</span>
+                            </div>
+                            <div class="login-row">
+                                <div class="login-avatar" style="border-color:var(--green);color:var(--green);">RS</div>
+                                <div class="login-info">
+                                    <div class="login-name">Ricardo Santos</div>
+                                    <div class="login-time">Login: 14:08 · Ativo agora · Turno 2</div>
+                                </div>
+                                <span class="status-badge run" style="font-size:9px;"><span
+                                        class="dot"></span>ATIVO</span>
+                            </div>
+                            <div class="login-row">
+                                <div class="login-avatar" style="border-color:var(--orange);color:var(--orange);">⚙
+                                </div>
+                                <div class="login-info">
+                                    <div class="login-name" style="color:var(--orange);">Supervisor — Acesso Config
+                                    </div>
+                                    <div class="login-time">11:34 · Alterou: peso alvo 500g→502g</div>
+                                </div>
+                                <span class="status-badge warn" style="font-size:9px;">CONFIG</span>
+                            </div>
+                            <div style="margin-top:12px;padding:10px;background:var(--bg3);border-radius:6px;">
+                                <div
+                                    style="font-size:10px;color:var(--text3);margin-bottom:6px;font-family:'Space Mono',monospace;">
+                                    DADOS ARMAZENADOS POR LOGIN</div>
+                                <div style="font-size:11px;color:var(--text2);line-height:1.9;">Usuário · Nível de
+                                    acesso · Timestamp login/logout · Ação realizada · Parâmetros alterados
+                                    (antes/depois)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><span class="card-title">Pacotes Reprovados</span><span
+                                style="font-family:'Space Mono',monospace;font-size:11px;color:var(--red);">83
+                                hoje</span></div>
+                        <div class="card-body">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Motivo</th>
+                                        <th>Qtd</th>
+                                        <th>%</th>
+                                        <th>Tend.</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Peso abaixo do mínimo</td>
+                                        <td style="font-family:'Space Mono',monospace;color:var(--red);">38</td>
+                                        <td style="color:var(--text3);">45,8%</td>
+                                        <td style="color:var(--red);">↑</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Peso acima do máximo</td>
+                                        <td style="font-family:'Space Mono',monospace;color:var(--orange);">21</td>
+                                        <td style="color:var(--text3);">25,3%</td>
+                                        <td style="color:var(--green);">↓</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Selagem falhou</td>
+                                        <td style="font-family:'Space Mono',monospace;color:var(--yellow);">16</td>
+                                        <td style="color:var(--text3);">19,3%</td>
+                                        <td style="color:var(--yellow);">→</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Embalagem rasgada</td>
+                                        <td style="font-family:'Space Mono',monospace;color:var(--text2);">8</td>
+                                        <td style="color:var(--text3);">9,6%</td>
+                                        <td style="color:var(--green);">↓</td>
+                        </div>
+                        </td>
+                        </tr>
+                        </tbody>
+                        </table>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+                            <div
+                                style="padding:10px;background:var(--red-dim);border:1px solid rgba(255,75,92,0.2);border-radius:8px;text-align:center;">
+                                <div style="font-size:9px;color:var(--text3);">Taxa Rejeição Hoje</div>
+                                <div style="font-family:'Space Mono',monospace;font-size:18px;color:var(--red);">0,88%
+                                </div>
+                                <div style="font-size:9px;color:var(--green);">meta: &lt; 1% ✓</div>
+                            </div>
+                            <div
+                                style="padding:10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;text-align:center;">
+                                <div style="font-size:9px;color:var(--text3);">Reprov. na Semana</div>
+                                <div style="font-family:'Space Mono',monospace;font-size:18px;color:var(--orange);">412
+                                </div>
+                                <div style="font-size:9px;color:var(--text3);">0,95% semana</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAPEAMENTO MODBUS -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Mapeamento de Registradores — CLP Altus XP300</span>
+                    <span style="font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;">Modbus TCP ·
+                        192.168.1.10:502 · Poll: 1s</span>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Registrador</th>
+                                <th>Tipo</th>
+                                <th>Variável CLP</th>
+                                <th>Descrição</th>
+                                <th>Escala</th>
+                                <th>Tópico MQTT</th>
+                                <th>Valor Atual</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-family:'Space Mono',monospace;color:var(--blue);">HR 0001</td>
+                                <td>Holding Reg</td>
+                                <td>mach_status</td>
+                                <td>Status da máquina</td>
+                                <td>0=OFF 1=RUN 2=ERR</td>
+                                <td>eva1000/status</td>
+                                <td><span class="status-badge run" style="font-size:9px;">1=RUN</span></td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:'Space Mono',monospace;color:var(--blue);">HR 0002</td>
+                                <td>Holding Reg</td>
+                                <td>pkg_counter</td>
+                                <td>Contador de pacotes</td>
+                                <td>×1 und</td>
+                                <td>eva1000/producao/contador</td>
+                                <td style="font-family:'Space Mono',monospace;color:var(--green);">9.380</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:'Space Mono',monospace;color:var(--blue);">HR 0003</td>
+                                <td>Holding Reg</td>
+                                <td>pkg_rejected</td>
+                                <td>Pacotes reprovados</td>
+                                <td>×1 und</td>
+                                <td>eva1000/producao/reprovados</td>
+                                <td style="font-family:'Space Mono',monospace;color:var(--red);">83</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:'Space Mono',monospace;color:var(--blue);">HR 0004</td>
+                                <td>Holding Reg</td>
+                                <td>reject_reason</td>
+                                <td>Motivo última reprovação</td>
+                                <td>código 0-9</td>
+                                <td>eva1000/producao/motivo_reprov</td>
+                                <td style="font-family:'Space Mono',monospace;">1=PESO MIN</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:'Space Mono',monospace;color:var(--blue);">HR 0010</td>
+                                <td>Holding Reg</td>
+                                <td>weight_actual</td>
+                                <td>Peso atual (CKNH)</td>
+                                <td>÷10 = gramas</td>
+                                <td>eva1000/peso/atual</td>
+                                <td style="font-family:'Space Mono',monospace;">5003</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:'Space Mono',monospace;color:var(--blue);">HR 0011</td>
+                                <td>Holding Reg</td>
+                                <td>weight_min</td>
+                                <td>Peso mínimo do turno</td>
+                                <td>÷10 = gramas</td>
+                                <td>eva1000/peso/min</td>
+                                <td style="font-family:'Space Mono',monospace;">4961</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:'Space Mono',monospace;color:var(--blue);">HR 0012</td>
+                                <td>Holding Reg</td>
+                                <td>weight_max</td>
+                                <td>Peso máximo do turno</td>
+                                <td>÷10 = gramas</td>
+                                <td>eva1000/peso/max</td>
+                                <td style="font-family:'Space Mono',monospace;">5049</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:'Space Mono',monospace;color:var(--blue);">HR 0013</td>
+                                <td>Holding Reg</td>
+                                <td>weight_target</td>
+                                <td>Peso alvo configurado</td>
+                                <td>÷10 = gramas</td>
+                                <td>eva1000/peso/alvo</td>
+                                <td style="font-family:'Space Mono',monospace;">5000</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:'Space Mono',monospace;color:var(--blue);">HR 0020</td>
+                                <td>Holding Reg</td>
+                                <td>machine_speed</td>
+                                <td>Velocidade (pct/min)</td>
+                                <td>÷10 = /min</td>
+                                <td>eva1000/velocidade</td>
+                                <td style="font-family:'Space Mono',monospace;color:var(--green);">206</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:'Space Mono',monospace;color:var(--blue);">HR 0030</td>
+                                <td>Holding Reg</td>
+                                <td>alarm_code</td>
+                                <td>Código alarme ativo</td>
+                                <td>0=OK</td>
+                                <td>eva1000/alarmes/codigo</td>
+                                <td style="font-family:'Space Mono',monospace;color:var(--yellow);">42</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:'Space Mono',monospace;color:var(--blue);">HR 0031</td>
+                                <td>Holding Reg</td>
+                                <td>alarm_count_day</td>
+                                <td>Total alarmes do dia</td>
+                                <td>×1</td>
+                                <td>eva1000/alarmes/total_dia</td>
+                                <td style="font-family:'Space Mono',monospace;">5</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:'Space Mono',monospace;color:var(--blue);">HR 0040</td>
+                                <td>Holding Reg</td>
+                                <td>runtime_min</td>
+                                <td>Tempo rodando (min)</td>
+                                <td>×1 min</td>
+                                <td>eva1000/tempo/rodando</td>
+                                <td style="font-family:'Space Mono',monospace;color:var(--green);">438</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:'Space Mono',monospace;color:var(--blue);">HR 0041</td>
+                                <td>Holding Reg</td>
+                                <td>stoptime_min</td>
+                                <td>Tempo parado (min)</td>
+                                <td>×1 min</td>
+                                <td>eva1000/tempo/parado</td>
+                                <td style="font-family:'Space Mono',monospace;color:var(--red);">42</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:'Space Mono',monospace;color:var(--blue);">HR 0042</td>
+                                <td>Holding Reg</td>
+                                <td>login_user_id</td>
+                                <td>ID usuário logado</td>
+                                <td>0=sem login</td>
+                                <td>eva1000/acesso/usuario</td>
+                                <td style="font-family:'Space Mono',monospace;">7</td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:'Space Mono',monospace;color:var(--blue);">DI 0001</td>
+                                <td>Discrete In</td>
+                                <td>esteira_ok</td>
+                                <td>Esteira operando</td>
+                                <td>0/1</td>
+                                <td>eva1000/io/esteira</td>
+                                <td><span class="status-badge run" style="font-size:9px;">1=OK</span></td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:'Space Mono',monospace;color:var(--blue);">DI 0002</td>
+                                <td>Discrete In</td>
+                                <td>emerg_stop</td>
+                                <td>Emergência acionada</td>
+                                <td>0/1</td>
+                                <td>eva1000/io/emergencia</td>
+                                <td><span
+                                        style="font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;">0=OFF</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="font-family:'Space Mono',monospace;color:var(--blue);">DI 0003</td>
+                                <td>Discrete In</td>
+                                <td>porta_aberta</td>
+                                <td>Porta de segurança</td>
+                                <td>0/1</td>
+                                <td>eva1000/io/porta</td>
+                                <td><span
+                                        style="font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;">0=FECHADA</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div><!-- /detail-view -->
+    </div><!-- /main -->
+    </div><!-- /layout -->
+
+    <script>
+        function updateClock() {
+            document.getElementById('clock').textContent =
+                new Date().toLocaleTimeString('pt-BR', { hour12: false });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        let macroOn = false;
+
+        function toggleMacro() {
+            macroOn = true;
+            document.getElementById('macro-view').style.display = 'flex';
+            document.getElementById('macro-view').style.flexDirection = 'column';
+            document.getElementById('macro-view').style.gap = '12px';
+            document.getElementById('detail-view').style.display = 'none';
+            document.getElementById('macroBtn').classList.add('selected');
+        }
+
+        function selectDetail(m) {
+            macroOn = false;
+            document.getElementById('macro-view').style.display = 'none';
+            document.getElementById('detail-view').style.display = 'flex';
+            document.getElementById('macroBtn').classList.remove('selected');
+            const title = m === 'eva' ? 'EVA 1000 — Empacotadeira' : 'ENF-NH — Enfardadeira';
+            document.getElementById('detail-title').textContent = title;
+        }
+    </script>
+</body>
+
+</html>
