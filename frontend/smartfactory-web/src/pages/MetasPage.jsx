@@ -46,9 +46,9 @@ export default function MetasPage() {
               ))}
 
               {/* Formula box */}
-              <div style={{ marginTop: 8, padding: 14, background: "var(--bg3)", border: "1px solid var(--border)" }}>
+              <div style={{ marginTop: 8, padding: 14, background: "var(--bg2)", border: "1px solid var(--border)" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--text3)", marginBottom: 8 }}>FÓRMULA OEE</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--cyan)", lineHeight: 2 }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--primary)", lineHeight: 2 }}>
                   OEE = D × P × Q<br/>
                   <span style={{ color: "var(--text3)" }}>Ex: 85% × 95% × 99.9%</span><br/>
                   <span style={{ color: "var(--green)" }}>= 80.9%</span>

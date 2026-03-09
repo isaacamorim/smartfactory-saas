@@ -42,7 +42,7 @@ export default function DashboardPage() {
             <OEEGauge value={liveOee} size={164} />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, width: "100%" }}>
               {[["DISP.","88.1","var(--cyan)",88],["PERF.","91.4","var(--green)",91],["QUAL.","98.2","var(--yellow)",98]].map(([l,v,c,p]) => (
-                <div key={l} style={{ background: "var(--bg2)", border: "1px solid var(--border)", padding: "10px 12px", textAlign: "center" }}>
+                <div key={l} style={{ background: "var(--bg1)", border: "1px solid var(--border)", padding: "10px 12px", textAlign: "center" }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--text3)", marginBottom: 5 }}>{l}</div>
                   <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 700, color: c }}>{v}%</div>
                   <div className="prog-track" style={{ marginTop: 6 }}>
@@ -65,7 +65,7 @@ export default function DashboardPage() {
               <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
                 <SevBar sev={a.sev} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "#fff", marginBottom: 2 }}>{a.nome}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 2 }}>{a.nome}</div>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text3)" }}>{a.maquina} · {a.linha}</div>
                 </div>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text3)" }}>{a.hora}</span>

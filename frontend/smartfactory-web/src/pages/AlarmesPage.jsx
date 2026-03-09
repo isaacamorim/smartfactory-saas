@@ -66,7 +66,7 @@ export default function AlarmesPage() {
               </div>
 
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#fff", marginBottom: 3 }}>{a.nome}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 3 }}>{a.nome}</div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text3)" }}>{a.maquina} · {a.linha}</div>
               </div>
 

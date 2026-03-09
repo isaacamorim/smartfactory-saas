@@ -67,7 +67,7 @@ export default function ManutencaoPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14 }}>
             {MACHINES.map(m => (
               <div key={m.id} style={{
-                background: "var(--bg2)",
+                background: "var(--bg1)",
                 border: `1px solid ${m.status==="offline"?"var(--red)":"var(--border)"}`,
                 padding: 16,
               }}>
@@ -80,7 +80,7 @@ export default function ManutencaoPage() {
                   {m.status === "online" ? "25 horas" : "AGUARDANDO OS"}
                 </div>
                 {m.status === "offline" && (
-                  <div style={{ marginTop: 10, padding: "6px 10px", background: "rgba(255,61,61,0.08)", border: "1px solid rgba(255,61,61,0.3)", fontSize: 11, color: "var(--red)" }}>
+                  <div style={{ marginTop: 10, padding: "6px 10px", background: "rgba(255,61,61,0.06)", border: "1px solid rgba(255,61,61,0.3)", fontSize: 11, color: "var(--red)" }}>
                     OS-0001 em andamento
                   </div>
                 )}
