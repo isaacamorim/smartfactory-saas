@@ -202,9 +202,56 @@ o2jqRCm0u4DNKSBS_516sGXecVbZQqzXhiPmWxbVOej4UTx_6jQyTPTeu_ZNmLnZhbqnLXFLB1Tq4z93
 ramR7XtQIGsmpDGwrVixudC4cWj6BUH8BhoylPg33BjGGOBA6_jFgK6tnbRyKEclteJ41wefidEVx_N72FqZsg==
 
 
+-------------------------------------------------------------
+-------------------------------------------------------------
+postgres psql - banco de dados relacional
+-------------------------------------------------------------
+-------------------------------------------------------------
+ssh root@191.252.217.250
 
+sudo -u postgres psql
+\c smartfactory
 
+Modelo final que vocês ficaram
 
+empresas
+id
+nome
+cnpj
+
+linhas
+id
+nome
+empresa_id
+
+usuarios
+id
+nome
+cpf
+telefone
+email
+funcao
+empresa_id
+adm
+operador
+mecanico
+
+maquinas
+id
+serial_number
+nome
+apelido
+linha_id
+
+metas_oee
+id
+nome
+maquina_id
+meta_producao_hora
+meta_disponibilidade
+meta_performance
+meta_qualidade
+meta_oee
 
 
 

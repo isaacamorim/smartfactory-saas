@@ -4,19 +4,18 @@ from app.database import get_db
 from app import crud, schemas
 from app.auth import get_current_user
 from app.models import Usuario
-from typing import List
 
 router = APIRouter(prefix="/maquinas", tags=["Máquinas"])
 
 
-@router.get("/empresa/{empresa_id}", response_model=List[schemas.MaquinaOut])
+@router.get("/empresa/{empresa_id}", response_model=list[schemas.MaquinaOut])
 def listar_maquinas(
     empresa_id: int,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    """Lista todas as máquinas de uma empresa."""
-    return crud.get_maquinas(db, empresa_id)
+    """Lista todas as máquinas ativas de uma empresa."""
+    return crud.get_maquinas_por_empresa(db, empresa_id)
 
 
 @router.get("/serial/{serial}", response_model=schemas.MaquinaOut)
@@ -25,8 +24,19 @@ def obter_por_serial(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    """Busca uma máquina pelo serial number."""
     maquina = crud.get_maquina_by_serial(db, serial)
+    if not maquina:
+        raise HTTPException(status_code=404, detail="Máquina não encontrada")
+    return maquina
+
+
+@router.get("/{maquina_id}", response_model=schemas.MaquinaOut)
+def obter_maquina(
+    maquina_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    maquina = crud.get_maquina(db, maquina_id)
     if not maquina:
         raise HTTPException(status_code=404, detail="Máquina não encontrada")
     return maquina
@@ -34,18 +44,33 @@ def obter_por_serial(
 
 @router.post("/", response_model=schemas.MaquinaOut, status_code=201)
 def criar_maquina(
-    maquina: schemas.MaquinaCreate,
+    data: schemas.MaquinaCreate,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
     """
-    Cadastra nova máquina e vincula ao serial.
-    A partir daqui, dados MQTT com esse serial são associados à empresa.
+    Cadastra máquina vinculada a uma linha.
+    empresa_id é resolvido automaticamente a partir da linha.
     """
-    existente = crud.get_maquina_by_serial(db, maquina.serial_number)
-    if existente:
+    if crud.get_maquina_by_serial(db, data.serial_number):
         raise HTTPException(status_code=400, detail="Serial já cadastrado")
-    return crud.create_maquina(db, maquina)
+    maquina = crud.create_maquina(db, data)
+    if not maquina:
+        raise HTTPException(status_code=404, detail="Linha não encontrada")
+    return maquina
+
+
+@router.put("/{maquina_id}", response_model=schemas.MaquinaOut)
+def atualizar_maquina(
+    maquina_id: int,
+    data: schemas.MaquinaUpdate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    maquina = crud.update_maquina(db, maquina_id, data)
+    if not maquina:
+        raise HTTPException(status_code=404, detail="Máquina não encontrada")
+    return maquina
 
 
 @router.delete("/{maquina_id}", status_code=204)
@@ -54,6 +79,7 @@ def deletar_maquina(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
+    """Soft delete: preenche deleted_at."""
     maquina = crud.delete_maquina(db, maquina_id)
     if not maquina:
         raise HTTPException(status_code=404, detail="Máquina não encontrada")
@@ -75,9 +101,9 @@ def obter_meta(
 
 @router.post("/meta", response_model=schemas.MetaOEEOut, status_code=201)
 def definir_meta(
-    meta: schemas.MetaOEECreate,
+    data: schemas.MetaOEECreate,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    """Cria ou atualiza as metas de OEE de uma máquina."""
-    return crud.upsert_meta_oee(db, meta)
+    """Cria ou atualiza metas de OEE de uma máquina (upsert)."""
+    return crud.upsert_meta_oee(db, data)

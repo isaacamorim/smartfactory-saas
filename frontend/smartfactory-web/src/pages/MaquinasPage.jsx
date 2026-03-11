@@ -3,84 +3,163 @@ import { useState } from "react";
 import Table from "../components/Table";
 import Form from "../components/Form";
 import { OEEMiniBar, PageHeader } from "../components/UI";
-import { MACHINES } from "../data/mockData";
+import { empresasAPI, linhasAPI, maquinasAPI } from "../services/api";
+import { useApi } from "../hooks/useApi";
 
-const FORM_FIELDS = [
-  { name:"serial",  label:"Serial Number",  placeholder:"EVA1000-00045" },
-  { name:"modelo",  label:"Modelo",         placeholder:"EVA1000" },
-  { name:"empresa", label:"Empresa", type:"select", options:[{ value:"nh", label:"NH Alimentos" }] },
-  { name:"linha",   label:"Linha",   type:"select", options:[{ value:"l1",label:"Linha 01"},{value:"l2",label:"Linha 02"},{value:"l3",label:"Linha 03"}] },
-];
+// ID da empresa logada — futuramente vem do contexto de auth
+const EMPRESA_ID = 1;
 
 export default function MaquinasPage() {
-  const [showForm, setShowForm] = useState(false);
+    const { data: empresaData } = useApi(() => empresasAPI.obterCompleto(EMPRESA_ID));
+    const { data: maquinas, loading, refetch } = useApi(() => maquinasAPI.listarPorEmpresa(EMPRESA_ID));
+    const [showForm, setShowForm] = useState(false);
+    const [feedback, setFeedback] = useState(null);
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <PageHeader
-        title="Máquinas"
-        sub="GERENCIAMENTO DE EQUIPAMENTOS"
-        action={<button className="btn btn-primary" onClick={() => setShowForm(s => !s)}>+ CADASTRAR MÁQUINA</button>}
-      />
+    // Opções de linha para o formulário
+    const linhaOptions = empresaData?.linhas?.map(l => ({ value: l.id, label: l.nome })) ?? [];
 
-      {showForm && (
-        <div className="animate-up">
-          <Form
-            title="Cadastrar Nova Máquina"
-            fields={FORM_FIELDS}
-            onSubmit={(v) => { alert(`Máquina ${v.serial} cadastrada!`); setShowForm(false); }}
-            onCancel={() => setShowForm(false)}
-          />
+    const FORM_FIELDS = [
+        {
+            name: "linha_id", label: "Linha", type: "select",
+            options: linhaOptions.length ? linhaOptions : [{ value: "", label: "— cadastre uma linha primeiro —" }]
+        },
+        { name: "serial_number", label: "Serial Number", placeholder: "EVA1000-00045" },
+        { name: "modelo",        label: "Modelo",        placeholder: "EVA1000" },
+    ];
+
+    const handleCriar = async (values) => {
+        try {
+            await maquinasAPI.criar({ ...values, linha_id: Number(values.linha_id) });
+            setFeedback({ tipo: "ok", msg: `Máquina ${values.serial_number} cadastrada!` });
+            setShowForm(false);
+            refetch();
+        } catch (e) {
+            setFeedback({ tipo: "erro", msg: e.message });
+        }
+    };
+
+    const handleDeletar = async (maquina) => {
+        if (!confirm(`Desativar máquina "${maquina.serial_number}"?`)) return;
+        try {
+            await maquinasAPI.deletar(maquina.id);
+            setFeedback({ tipo: "ok", msg: `Máquina ${maquina.serial_number} desativada.` });
+            refetch();
+        } catch (e) {
+            setFeedback({ tipo: "erro", msg: e.message });
+        }
+    };
+
+    return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <PageHeader
+                title="Máquinas"
+                sub="GERENCIAMENTO DE EQUIPAMENTOS"
+                action={
+                    <button className="btn btn-primary" onClick={() => setShowForm(s => !s)}>
+                        {showForm ? "CANCELAR" : "+ CADASTRAR MÁQUINA"}
+                    </button>
+                }
+            />
+
+            {feedback && (
+                <div style={{
+                    padding: "12px 16px",
+                    background: feedback.tipo === "ok" ? "rgba(0,200,83,.1)" : "rgba(255,61,61,.1)",
+                    border: `1px solid ${feedback.tipo === "ok" ? "var(--green)" : "var(--red)"}`,
+                    color: feedback.tipo === "ok" ? "var(--green)" : "var(--red)",
+                    fontFamily: "var(--font-mono)", fontSize: 12,
+                    display: "flex", justifyContent: "space-between",
+                }}>
+                    {feedback.msg}
+                    <span style={{ cursor: "pointer" }} onClick={() => setFeedback(null)}>✕</span>
+                </div>
+            )}
+
+            {/* Hierarquia visual: Empresa → Linhas → Máquinas */}
+            {empresaData && (
+                <div className="sf-card">
+                    <div className="sf-card-header">
+                        <span className="sf-card-title">Estrutura — {empresaData.nome}</span>
+                    </div>
+                    <div className="sf-card-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        {(empresaData.linhas ?? []).map(linha => (
+                            <div key={linha.id} style={{
+                                border: "1px solid var(--border)",
+                                borderLeft: "3px solid var(--primary)",
+                            }}>
+                                <div style={{
+                                    background: "var(--bg1)", padding: "8px 14px",
+                                    fontFamily: "var(--font-display)", fontSize: 13,
+                                    fontWeight: 700, letterSpacing: 1, color: "var(--text)",
+                                    borderBottom: "1px solid var(--border)",
+                                }}>
+                                    ≋ {linha.nome}
+                                </div>
+                                <div style={{ padding: "8px 14px", display: "flex", flexWrap: "wrap", gap: 8 }}>
+                                    {(linha.maquinas ?? []).length === 0 ? (
+                                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text3)" }}>
+                                            Nenhuma máquina nesta linha
+                                        </span>
+                                    ) : (
+                                        linha.maquinas.map(m => (
+                                            <div key={m.id} style={{
+                                                border: "1px solid var(--border2)",
+                                                padding: "6px 12px", fontSize: 12,
+                                                fontFamily: "var(--font-mono)", color: "var(--primary)",
+                                            }}>
+                                                {m.serial_number} · {m.modelo}
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {showForm && (
+                <div className="animate-up">
+                    <Form
+                        title="Cadastrar Nova Máquina"
+                        fields={FORM_FIELDS}
+                        onSubmit={handleCriar}
+                        onCancel={() => setShowForm(false)}
+                    />
+                </div>
+            )}
+
+            <div className="sf-card">
+                <div className="sf-card-header">
+                    <span className="sf-card-title">Todas as Máquinas</span>
+                    {loading && <span className="badge badge-info">CARREGANDO...</span>}
+                </div>
+                <Table
+                    data={maquinas ?? []}
+                    emptyMessage="Nenhuma máquina cadastrada"
+                    columns={[
+                        { key: "serial_number", label: "Serial",   render: v => <span className="serial">{v}</span> },
+                        { key: "modelo",        label: "Modelo"   },
+                        { key: "linha_id",      label: "Linha",    render: v => {
+                            const l = empresaData?.linhas?.find(l => l.id === v);
+                            return l?.nome ?? `Linha #${v}`;
+                        }},
+                        { key: "criado_em",     label: "Cadastro", render: v => new Date(v).toLocaleDateString("pt-BR") },
+                        {
+                            key: "id", label: "Ações",
+                            render: (v, row) => (
+                                <button
+                                    className="btn btn-danger"
+                                    style={{ padding: "4px 12px", fontSize: 10 }}
+                                    onClick={(e) => { e.stopPropagation(); handleDeletar(row); }}
+                                >
+                                    DESATIVAR
+                                </button>
+                            )
+                        },
+                    ]}
+                />
+            </div>
         </div>
-      )}
-
-      {/* Machine cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14 }}>
-        {MACHINES.map(m => (
-          <div key={m.id} className="sf-card animate-up">
-            <div style={{ padding: "13px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span className="serial">{m.serial}</span>
-              <span className={`chip chip-${m.status==="online"?"green":"red"}`}>{m.status==="online"?"ONLINE":"OFFLINE"}</span>
-            </div>
-            <div style={{ padding: 16 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-                {[["MODELO",m.modelo],["EMPRESA",m.empresa],["LINHA",m.linha],["OPERADOR",m.turno]].map(([l,v]) => (
-                  <div key={l}>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--text3)", marginBottom: 3 }}>{l}</div>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{v}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-                {[["OEE",`${m.oee}%`,"var(--cyan)"],["BOAS",m.boas.toLocaleString(),"var(--green)"],["VEL",`${m.vel}/m`,"var(--text2)"]].map(([l,v,c]) => (
-                  <div key={l} style={{ textAlign: "center" }}>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 1, color: "var(--text3)", marginBottom: 4 }}>{l}</div>
-                    <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 700, color: c }}>{v}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Full table */}
-      <div className="sf-card">
-        <div className="sf-card-header"><span className="sf-card-title">Todas as Máquinas</span></div>
-        <Table
-          data={MACHINES}
-          columns={[
-            { key:"serial",  label:"Serial",   render: v => <span className="serial">{v}</span> },
-            { key:"modelo",  label:"Modelo"  },
-            { key:"empresa", label:"Empresa" },
-            { key:"linha",   label:"Linha"   },
-            { key:"status",  label:"Status",  render: v => <span className={`chip chip-${v==="online"?"green":"red"}`}>{v==="online"?"ONLINE":"OFFLINE"}</span> },
-            { key:"oee",     label:"OEE",     render: v => <OEEMiniBar value={v} /> },
-            { key:"boas",    label:"Produção", render: v => v.toLocaleString() },
-            { key:"turno",   label:"Operador" },
-          ]}
-        />
-      </div>
-    </div>
-  );
+    );
 }
