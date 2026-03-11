@@ -2,117 +2,129 @@
 import { useState } from "react";
 import Table from "../components/Table";
 import Form from "../components/Form";
-import { PageHeader, StatCard } from "../components/UI";
+import { PageHeader, Feedback, Modal } from "../components/UI";
 import { empresasAPI } from "../services/api";
 import { useApi } from "../hooks/useApi";
 
-const FORM_CRIAR = [
-    { name: "nome", label: "Razão Social", placeholder: "Nome da empresa" },
-    { name: "cnpj", label: "CNPJ",         placeholder: "00.000.000/0001-00" },
+const FIELDS = [
+  { name:"nome", label:"Razão Social",  placeholder:"Ex: NH Alimentos Ltda", required:true },
+  { name:"cnpj", label:"CNPJ",          placeholder:"00.000.000/0001-00",    required:true },
 ];
 
 export default function EmpresasPage() {
-    const { data: empresas, loading, error, refetch } = useApi(() => empresasAPI.listar());
-    const [showForm, setShowForm] = useState(false);
-    const [feedback, setFeedback] = useState(null);
+  const { data: empresas, loading, refetch } = useApi(() => empresasAPI.listar());
+  const [feedback,   setFeedback]   = useState(null);
+  const [modalCriar, setModalCriar] = useState(false);
+  const [editando,   setEditando]   = useState(null);
+  const [deletando,  setDeletando]  = useState(null);
 
-    const handleCriar = async (values) => {
-        try {
-            await empresasAPI.criar(values);
-            setFeedback({ tipo: "ok", msg: `Empresa "${values.nome}" cadastrada!` });
-            setShowForm(false);
-            refetch();
-        } catch (e) {
-            setFeedback({ tipo: "erro", msg: e.message });
-        }
-    };
+  const fb = (tipo, msg) => { setFeedback({ tipo, msg }); setTimeout(() => setFeedback(null), 4000); };
 
-    const handleDeletar = async (empresa) => {
-        if (!confirm(`Desativar empresa "${empresa.nome}"?`)) return;
-        try {
-            await empresasAPI.deletar(empresa.id);
-            setFeedback({ tipo: "ok", msg: `Empresa "${empresa.nome}" desativada.` });
-            refetch();
-        } catch (e) {
-            setFeedback({ tipo: "erro", msg: e.message });
-        }
-    };
+  const handleCriar = async (v) => {
+    if (!v.nome || !v.cnpj) return fb("erro", "Nome e CNPJ são obrigatórios.");
+    try {
+      await empresasAPI.criar(v);
+      fb("ok", `Empresa "${v.nome}" criada!`);
+      setModalCriar(false); refetch();
+    } catch (e) { fb("erro", e.message); }
+  };
 
-    return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            <PageHeader
-                title="Empresas"
-                sub="GESTÃO MULTIEMPRESA"
-                action={
-                    <button className="btn btn-primary" onClick={() => setShowForm(s => !s)}>
-                        {showForm ? "CANCELAR" : "+ NOVA EMPRESA"}
-                    </button>
-                }
-            />
+  const handleEditar = async (v) => {
+    try {
+      await empresasAPI.atualizar(editando.id, v);
+      fb("ok", `Empresa "${v.nome}" atualizada.`);
+      setEditando(null); refetch();
+    } catch (e) { fb("erro", e.message); }
+  };
 
-            {/* Feedback */}
-            {feedback && (
-                <div style={{
-                    padding: "12px 16px",
-                    background: feedback.tipo === "ok" ? "rgba(0,200,83,.1)" : "rgba(255,61,61,.1)",
-                    border: `1px solid ${feedback.tipo === "ok" ? "var(--green)" : "var(--red)"}`,
-                    color: feedback.tipo === "ok" ? "var(--green)" : "var(--red)",
-                    fontFamily: "var(--font-mono)", fontSize: 12,
-                    display: "flex", justifyContent: "space-between",
-                }}>
-                    {feedback.msg}
-                    <span style={{ cursor: "pointer" }} onClick={() => setFeedback(null)}>✕</span>
-                </div>
-            )}
+  const handleDeletar = async () => {
+    try {
+      await empresasAPI.deletar(deletando.id);
+      fb("ok", `Empresa "${deletando.nome}" desativada.`);
+      setDeletando(null); refetch();
+    } catch (e) { fb("erro", e.message); }
+  };
 
-            {/* KPIs */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14 }}>
-                <StatCard label="Empresas Ativas" value={empresas?.length ?? "—"} accent="var(--primary)" />
-                <StatCard label="Carregando"       value={loading ? "..." : "OK"} accent="var(--green)"   />
-                <StatCard label="Erros"            value={error   ? "!" : "0"}    accent={error ? "var(--red)" : "var(--green)"} />
-            </div>
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+      <PageHeader
+        title="Empresas"
+        sub="GESTÃO MULTIEMPRESA"
+        action={<button className="btn btn-solid" onClick={() => setModalCriar(true)}>+ Nova Empresa</button>}
+      />
 
-            {/* Form */}
-            {showForm && (
-                <div className="animate-up">
-                    <Form
-                        title="Cadastrar Nova Empresa"
-                        fields={FORM_CRIAR}
-                        onSubmit={handleCriar}
-                        onCancel={() => setShowForm(false)}
-                    />
-                </div>
-            )}
+      <Feedback {...(feedback ?? {})} onClose={() => setFeedback(null)} />
 
-            {/* Tabela */}
-            <div className="sf-card">
-                <div className="sf-card-header">
-                    <span className="sf-card-title">Empresas Cadastradas</span>
-                    {loading && <span className="badge badge-info">CARREGANDO...</span>}
-                </div>
-                <Table
-                    data={empresas ?? []}
-                    emptyMessage={error ? `Erro: ${error}` : "Nenhuma empresa cadastrada"}
-                    columns={[
-                        { key: "id",        label: "ID",          render: v => <span style={{ fontFamily: "var(--font-mono)", color: "var(--text3)" }}>#{v}</span> },
-                        { key: "nome",      label: "Razão Social" },
-                        { key: "cnpj",      label: "CNPJ",        render: v => <span style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>{v}</span> },
-                        { key: "criado_em", label: "Criado em",   render: v => new Date(v).toLocaleDateString("pt-BR") },
-                        {
-                            key: "id", label: "Ações",
-                            render: (v, row) => (
-                                <button
-                                    className="btn btn-danger"
-                                    style={{ padding: "4px 12px", fontSize: 10 }}
-                                    onClick={(e) => { e.stopPropagation(); handleDeletar(row); }}
-                                >
-                                    DESATIVAR
-                                </button>
-                            )
-                        },
-                    ]}
-                />
-            </div>
+      {/* KPIs */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
+        <div className="sf-card" style={{ padding:16 }}>
+          <div style={{ fontSize:11, fontWeight:600, color:"var(--text3)", textTransform:"uppercase", marginBottom:8 }}>Total Ativas</div>
+          <div style={{ fontFamily:"var(--font-display)", fontSize:32, fontWeight:800, color:"var(--primary)" }}>{empresas?.length ?? "—"}</div>
         </div>
-    );
+        <div className="sf-card" style={{ padding:16 }}>
+          <div style={{ fontSize:11, fontWeight:600, color:"var(--text3)", textTransform:"uppercase", marginBottom:8 }}>Status API</div>
+          <div style={{ fontFamily:"var(--font-display)", fontSize:20, fontWeight:700, color: loading?"var(--orange)":empresas?"var(--green)":"var(--red)" }}>
+            {loading ? "Carregando" : empresas ? "Online" : "Erro"}
+          </div>
+        </div>
+        <div className="sf-card" style={{ padding:16 }}>
+          <div style={{ fontSize:11, fontWeight:600, color:"var(--text3)", textTransform:"uppercase", marginBottom:8 }}>Última Atualização</div>
+          <div style={{ fontFamily:"var(--font-mono)", fontSize:14, fontWeight:500, color:"var(--text2)" }}>
+            {new Date().toLocaleTimeString("pt-BR")}
+          </div>
+        </div>
+      </div>
+
+      <div className="sf-card">
+        <div className="sf-card-header">
+          <span className="sf-card-title">Empresas Cadastradas</span>
+          {loading && <span className="badge badge-info">Carregando...</span>}
+        </div>
+        <Table
+          data={empresas ?? []}
+          emptyMessage="Nenhuma empresa cadastrada."
+          columns={[
+            { key:"id",        label:"ID",         render:v => <span style={{ fontFamily:"var(--font-mono)", color:"var(--text3)", fontSize:11 }}>#{v}</span> },
+            { key:"nome",      label:"Razão Social" },
+            { key:"cnpj",      label:"CNPJ",        render:v => <span style={{ fontFamily:"var(--font-mono)", fontSize:11 }}>{v}</span> },
+            { key:"criado_em", label:"Cadastro",    render:v => new Date(v).toLocaleDateString("pt-BR") },
+            {
+              key:"_acoes", label:"Ações",
+              render:(_,row) => (
+                <div style={{ display:"flex", gap:6 }} onClick={e => e.stopPropagation()}>
+                  <button className="btn btn-icon" title="Editar" onClick={() => setEditando(row)}>✎</button>
+                  <button className="btn btn-icon danger" title="Desativar" onClick={() => setDeletando(row)}>✕</button>
+                </div>
+              )
+            },
+          ]}
+        />
+      </div>
+
+      {modalCriar && (
+        <Modal title="Nova Empresa" onClose={() => setModalCriar(false)}>
+          <Form fields={FIELDS} onSubmit={handleCriar} onCancel={() => setModalCriar(false)} submitLabel="Cadastrar" />
+        </Modal>
+      )}
+
+      {editando && (
+        <Modal title={`Editar — ${editando.nome}`} onClose={() => setEditando(null)}>
+          <Form fields={FIELDS} initialValues={{ nome:editando.nome, cnpj:editando.cnpj }}
+            onSubmit={handleEditar} onCancel={() => setEditando(null)} submitLabel="Salvar" />
+        </Modal>
+      )}
+
+      {deletando && (
+        <Modal title="Confirmar Desativação" onClose={() => setDeletando(null)} width={420}>
+          <p style={{ fontSize:14, color:"var(--text2)", marginBottom:20 }}>
+            Deseja desativar <strong>{deletando.nome}</strong>? Todos os dados serão preservados.
+          </p>
+          <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
+            <button className="btn btn-ghost" onClick={() => setDeletando(null)}>Cancelar</button>
+            <button className="btn btn-danger" onClick={handleDeletar}>Desativar</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
 }
