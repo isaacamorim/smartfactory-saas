@@ -1,0 +1,105 @@
+git repositorio
+ Inicializar Git no projeto
+
+Dentro da pasta do projeto:
+
+cd smartfactory-saas
+
+inicializar git:
+
+git init
+ Criar .gitignore
+
+Crie um arquivo:
+
+.gitignore
+
+Conteúdo:
+
+__pycache__/
+*.pyc
+.env
+.venv
+venv/
+
+Isso evita subir coisas desnecessárias.
+
+
+
+
+
+Agora vamos rodar o frontend
+
+Dentro da pasta:
+
+cd /opt/smartfactory-saas/frontend/smartfactory-web
+npm install
+npm run dev -- --host
+execute:
+
+npm audit
+
+
+seu PC local:
+bashgit status
+git log --oneline -5
+E no servidor:
+bashcd /opt/smartfactory-saas
+git log --oneline -5
+git status
+Assim consigo ver exatamente o que está diferente entre local e servidor. Mas enquanto isso, o fluxo correto é esse:
+
+No seu PC local (quando terminar de editar):
+bashcd smartfactory-saas
+
+# Ver o que mudou
+git status
+
+# Adicionar tudo
+git add .
+
+# Commitar com mensagem
+git commit -m "atualização dos arquivos"
+
+# Enviar para o GitHub
+git push origin main
+
+No servidor (para puxar o que foi enviado):
+bashcd /opt/smartfactory-saas
+
+# Puxar as atualizações do GitHub
+git pull origin main
+
+Se der conflito no servidor, faça reset forçado (descarta o que estava no servidor e pega tudo do GitHub):
+bashcd /opt/smartfactory-saas
+git fetch origin
+git reset --hard origin/main
+
+Se o repositório no servidor não tem o .git (foi copiado manual em vez de clonado), aí precisa recriar:
+bashcd /opt
+rm -rf smartfactory-saas
+git clone https://github.com/isaacamorim/smartfactory-saas.git
+
+
+Veja os arquivos:
+
+ls
+
+Agora devem aparecer os arquivos novos que você subiu.
+
+
+4️⃣ Reinstalar dependências
+
+Ativar seu ambiente:
+
+source /opt/venv/bin/activate
+
+Instalar dependências:
+
+pip install -r requirements.txt
+
+5️⃣Rodar API
+
+Agora rode:
+
+uvicorn app.main:app --host 0.0.0.0 --port 8000
