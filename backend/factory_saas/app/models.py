@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Enum
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Enum, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -11,16 +11,10 @@ class RoleEnum(str, enum.Enum):
     operador = "operador"
 
 
-# ─── MIXIN soft-delete ────────────────────────────────────────────────────────
-# Todas as tabelas herdam criado_em e deleted_at.
-# Nunca deletamos fisicamente — apenas preenchemos deleted_at.
-
 class SoftDeleteMixin:
     criado_em  = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     deleted_at = Column(DateTime(timezone=True), nullable=True, default=None)
 
-
-# ─── EMPRESA ──────────────────────────────────────────────────────────────────
 
 class Empresa(SoftDeleteMixin, Base):
     __tablename__ = "empresas"
@@ -33,8 +27,6 @@ class Empresa(SoftDeleteMixin, Base):
     usuarios = relationship("Usuario", back_populates="empresa")
 
 
-# ─── LINHA ────────────────────────────────────────────────────────────────────
-
 class Linha(SoftDeleteMixin, Base):
     __tablename__ = "linhas"
 
@@ -45,8 +37,6 @@ class Linha(SoftDeleteMixin, Base):
     empresa  = relationship("Empresa",  back_populates="linhas")
     maquinas = relationship("Maquina",  back_populates="linha")
 
-
-# ─── MAQUINA ──────────────────────────────────────────────────────────────────
 
 class Maquina(SoftDeleteMixin, Base):
     __tablename__ = "maquinas"
@@ -62,13 +52,12 @@ class Maquina(SoftDeleteMixin, Base):
     meta    = relationship("MetaOEE", back_populates="maquina", uselist=False)
 
 
-# ─── USUARIO ──────────────────────────────────────────────────────────────────
-
 class Usuario(SoftDeleteMixin, Base):
     __tablename__ = "usuarios"
 
     id         = Column(Integer, primary_key=True, index=True)
-    empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=False)
+    # empresa_id é NULL para admin — admin não pertence a nenhuma empresa específica
+    empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=True)
     nome       = Column(String, nullable=False)
     email      = Column(String, unique=True, nullable=False)
     senha_hash = Column(String, nullable=False)
@@ -76,8 +65,6 @@ class Usuario(SoftDeleteMixin, Base):
 
     empresa = relationship("Empresa", back_populates="usuarios")
 
-
-# ─── META OEE ─────────────────────────────────────────────────────────────────
 
 class MetaOEE(Base):
     __tablename__ = "metas_oee"

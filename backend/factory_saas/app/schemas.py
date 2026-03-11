@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from enum import Enum
 
@@ -21,12 +21,11 @@ class EmpresaUpdate(BaseModel):
     cnpj: Optional[str] = None
 
 class EmpresaOut(BaseModel):
-    id:        int
-    nome:      str
-    cnpj:      str
-    criado_em: datetime
+    id:         int
+    nome:       str
+    cnpj:       str
+    criado_em:  datetime
     deleted_at: Optional[datetime] = None
-
     class Config:
         from_attributes = True
 
@@ -35,7 +34,6 @@ class EmpresaOut(BaseModel):
 
 class LinhaCreate(BaseModel):
     nome: str
-    # empresa_id é injetado pela rota
 
 class LinhaUpdate(BaseModel):
     nome: Optional[str] = None
@@ -46,13 +44,11 @@ class LinhaOut(BaseModel):
     empresa_id: int
     criado_em:  datetime
     deleted_at: Optional[datetime] = None
-
     class Config:
         from_attributes = True
 
 class LinhaComMaquinas(LinhaOut):
-    maquinas: list["MaquinaOut"] = []
-
+    maquinas: List["MaquinaOut"] = []
     class Config:
         from_attributes = True
 
@@ -63,11 +59,10 @@ class MaquinaCreate(BaseModel):
     linha_id:      int
     serial_number: str
     modelo:        str
-    # empresa_id é resolvido automaticamente a partir da linha
 
 class MaquinaUpdate(BaseModel):
-    linha_id: Optional[int]  = None
-    modelo:   Optional[str]  = None
+    linha_id: Optional[int] = None
+    modelo:   Optional[str] = None
 
 class MaquinaOut(BaseModel):
     id:            int
@@ -77,15 +72,6 @@ class MaquinaOut(BaseModel):
     modelo:        str
     criado_em:     datetime
     deleted_at:    Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
-
-class MaquinaDetalhe(MaquinaOut):
-    """Retorna máquina com nome da linha e empresa embutidos."""
-    linha_nome:   Optional[str] = None
-    empresa_nome: Optional[str] = None
-
     class Config:
         from_attributes = True
 
@@ -93,7 +79,7 @@ class MaquinaDetalhe(MaquinaOut):
 # ─── USUARIO ──────────────────────────────────────────────────────────────────
 
 class UsuarioCreate(BaseModel):
-    empresa_id: int
+    empresa_id: Optional[int] = None   # None para admin
     nome:       str
     email:      EmailStr
     senha:      str
@@ -105,13 +91,12 @@ class UsuarioUpdate(BaseModel):
 
 class UsuarioOut(BaseModel):
     id:         int
-    empresa_id: int
+    empresa_id: Optional[int]
     nome:       str
     email:      str
     role:       RoleEnum
     criado_em:  datetime
     deleted_at: Optional[datetime] = None
-
     class Config:
         from_attributes = True
 
@@ -133,7 +118,6 @@ class MetaOEEOut(BaseModel):
     meta_performance:     float
     meta_qualidade:       float
     atualizado_em:        Optional[datetime] = None
-
     class Config:
         from_attributes = True
 
@@ -141,8 +125,8 @@ class MetaOEEOut(BaseModel):
 # ─── AUTH ─────────────────────────────────────────────────────────────────────
 
 class Token(BaseModel):
-    access_token: str
-    token_type:   str
+    access_token:  str
+    token_type:    str
 
 class TokenData(BaseModel):
     email: Optional[str] = None
@@ -151,13 +135,17 @@ class LoginInput(BaseModel):
     email: EmailStr
     senha: str
 
+class LoginResponse(BaseModel):
+    """Retorna token + dados do usuário logado para o frontend."""
+    access_token: str
+    token_type:   str
+    usuario:      UsuarioOut
 
-# ─── RESPOSTA HIERÁRQUICA ─────────────────────────────────────────────────────
+
+# ─── HIERARQUIA ───────────────────────────────────────────────────────────────
 
 class EmpresaComLinhas(EmpresaOut):
-    """Retorna empresa com linhas e máquinas aninhadas."""
-    linhas: list[LinhaComMaquinas] = []
-
+    linhas: List[LinhaComMaquinas] = []
     class Config:
         from_attributes = True
 

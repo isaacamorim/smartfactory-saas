@@ -1,36 +1,45 @@
 // src/hooks/useAuth.js
+// Hook de autenticação — persiste usuário no localStorage
 import { useState, useCallback } from "react";
-import { authAPI, setToken, clearToken } from "../services/api";
+import { authAPI, setToken, clearToken, setUsuario, clearUsuario, getToken, getUsuario } from "../services/api";
 
 export function useAuth() {
-  const [user, setUser]       = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState(null);
+    const [usuario, setUsuarioState] = useState(() => getUsuario());
+    const [loading,  setLoading]  = useState(false);
+    const [erro,     setErro]     = useState(null);
 
-  const login = useCallback(async (email, senha) => {
-    setLoading(true); setError(null);
-    try {
-      const data = await authAPI.login(email, senha);
-      setToken(data.access_token);
-      setUser({ email, nome: email.split("@")[0].toUpperCase() });
-      return true;
-    } catch (e) {
-      setError(e.message);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    const login = useCallback(async (email, senha) => {
+        setLoading(true); setErro(null);
+        try {
+            const data = await authAPI.login(email, senha);
+            setToken(data.access_token);
+            setUsuario(data.usuario);
+            setUsuarioState(data.usuario);
+            return data.usuario;
+        } catch (e) {
+            setErro(e.message);
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
-  const logout = useCallback(() => {
-    clearToken();
-    setUser(null);
-  }, []);
+    const logout = useCallback(() => {
+        clearToken();
+        clearUsuario();
+        setUsuarioState(null);
+    }, []);
 
-  // login rápido com mock (para desenvolvimento sem API)
-  const loginMock = useCallback((email) => {
-    setUser({ email, nome: email.split("@")[0].toUpperCase() });
-  }, []);
-
-  return { user, loading, error, login, logout, loginMock };
+    return {
+        usuario,
+        loading,
+        erro,
+        login,
+        logout,
+        isLogado:  !!usuario,
+        isAdmin:   usuario?.role === "admin",
+        isGerente: usuario?.role === "gerente",
+        isOperador:usuario?.role === "operador",
+        empresaId: usuario?.empresa_id ?? null,
+    };
 }

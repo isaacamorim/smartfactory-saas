@@ -1,30 +1,41 @@
 from fastapi import APIRouter, Depends, HTTPException
+from typing import List
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app import crud, schemas
-from app.auth import get_current_user
+from app.auth import get_current_user, require_admin, require_gerente_ou_admin, verificar_acesso_empresa
 from app.models import Usuario
 
 router = APIRouter(prefix="/empresas", tags=["Empresas"])
 
 
 # ─── EMPRESAS ─────────────────────────────────────────────────────────────────
+# Apenas admin gerencia empresas
 
-@router.get("/", response_model=list[schemas.EmpresaOut])
+@router.get("/", response_model=List[schemas.EmpresaOut])
 def listar_empresas(
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user)
+    current_user: Usuario = Depends(get_current_user),
 ):
-    """Lista todas as empresas ativas (deleted_at IS NULL)."""
-    return crud.get_empresas(db)
+    """
+    Admin: retorna todas as empresas.
+    Gerente/Operador: retorna apenas a própria empresa.
+    """
+    if current_user.role == "admin":
+        return crud.get_empresas(db)
+    if not current_user.empresa_id:
+        return []
+    emp = crud.get_empresa(db, current_user.empresa_id)
+    return [emp] if emp else []
 
 
 @router.get("/{empresa_id}", response_model=schemas.EmpresaOut)
 def obter_empresa(
     empresa_id: int,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user)
+    current_user: Usuario = Depends(get_current_user),
 ):
+    verificar_acesso_empresa(empresa_id, current_user)
     empresa = crud.get_empresa(db, empresa_id)
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
@@ -32,12 +43,13 @@ def obter_empresa(
 
 
 @router.get("/{empresa_id}/completo", response_model=schemas.EmpresaComLinhas)
-def obter_empresa_com_linhas(
+def obter_empresa_completo(
     empresa_id: int,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user)
+    current_user: Usuario = Depends(get_current_user),
 ):
-    """Retorna empresa com todas as linhas e máquinas aninhadas."""
+    """Empresa com linhas e máquinas aninhadas."""
+    verificar_acesso_empresa(empresa_id, current_user)
     empresa = crud.get_empresa(db, empresa_id)
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
@@ -48,9 +60,9 @@ def obter_empresa_com_linhas(
 def criar_empresa(
     data: schemas.EmpresaCreate,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user)
+    current_user: Usuario = Depends(require_admin),
 ):
-    """Cadastra uma nova empresa."""
+    """Somente admin cria empresas."""
     return crud.create_empresa(db, data)
 
 
@@ -59,7 +71,7 @@ def atualizar_empresa(
     empresa_id: int,
     data: schemas.EmpresaUpdate,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user)
+    current_user: Usuario = Depends(require_admin),
 ):
     empresa = crud.update_empresa(db, empresa_id, data)
     if not empresa:
@@ -71,23 +83,22 @@ def atualizar_empresa(
 def deletar_empresa(
     empresa_id: int,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user)
+    current_user: Usuario = Depends(require_admin),
 ):
-    """Soft delete: preenche deleted_at, não remove do banco."""
-    empresa = crud.delete_empresa(db, empresa_id)
-    if not empresa:
+    if not crud.delete_empresa(db, empresa_id):
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
 
 
-# ─── LINHAS (sub-recurso de empresa) ──────────────────────────────────────────
+# ─── LINHAS ───────────────────────────────────────────────────────────────────
+# Gerente pode criar/editar linhas da própria empresa. Admin pode tudo.
 
-@router.get("/{empresa_id}/linhas", response_model=list[schemas.LinhaOut])
+@router.get("/{empresa_id}/linhas", response_model=List[schemas.LinhaOut])
 def listar_linhas(
     empresa_id: int,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user)
+    current_user: Usuario = Depends(get_current_user),
 ):
-    """Lista linhas ativas de uma empresa."""
+    verificar_acesso_empresa(empresa_id, current_user)
     return crud.get_linhas(db, empresa_id)
 
 
@@ -96,10 +107,10 @@ def criar_linha(
     empresa_id: int,
     data: schemas.LinhaCreate,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user)
+    current_user: Usuario = Depends(require_gerente_ou_admin),
 ):
-    empresa = crud.get_empresa(db, empresa_id)
-    if not empresa:
+    verificar_acesso_empresa(empresa_id, current_user)
+    if not crud.get_empresa(db, empresa_id):
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
     return crud.create_linha(db, empresa_id, data)
 
@@ -110,8 +121,9 @@ def atualizar_linha(
     linha_id: int,
     data: schemas.LinhaUpdate,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user)
+    current_user: Usuario = Depends(require_gerente_ou_admin),
 ):
+    verificar_acesso_empresa(empresa_id, current_user)
     linha = crud.update_linha(db, linha_id, data)
     if not linha:
         raise HTTPException(status_code=404, detail="Linha não encontrada")
@@ -123,22 +135,19 @@ def deletar_linha(
     empresa_id: int,
     linha_id: int,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user)
+    current_user: Usuario = Depends(require_gerente_ou_admin),
 ):
-    """Soft delete da linha."""
-    linha = crud.delete_linha(db, linha_id)
-    if not linha:
+    verificar_acesso_empresa(empresa_id, current_user)
+    if not crud.delete_linha(db, linha_id):
         raise HTTPException(status_code=404, detail="Linha não encontrada")
 
 
-# ─── MÁQUINAS (sub-recurso de linha dentro de empresa) ────────────────────────
-
-@router.get("/{empresa_id}/linhas/{linha_id}/maquinas", response_model=list[schemas.MaquinaOut])
+@router.get("/{empresa_id}/linhas/{linha_id}/maquinas", response_model=List[schemas.MaquinaOut])
 def listar_maquinas_da_linha(
     empresa_id: int,
     linha_id: int,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user)
+    current_user: Usuario = Depends(get_current_user),
 ):
-    """Lista máquinas ativas de uma linha específica."""
+    verificar_acesso_empresa(empresa_id, current_user)
     return crud.get_maquinas_por_linha(db, linha_id)

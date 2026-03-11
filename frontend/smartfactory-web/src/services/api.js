@@ -1,10 +1,20 @@
-// src/services/api.js
 const BASE_URL = "http://191.252.217.250:8000";
 
-// ─── TOKEN ────────────────────────────────────
-export const getToken   = ()    => localStorage.getItem("sf_token");
-export const setToken   = (tok) => localStorage.setItem("sf_token", tok);
-export const clearToken = ()    => localStorage.removeItem("sf_token");
+// ─── TOKEN + USUÁRIO ──────────────────────────────────────────────────────────
+export const getToken     = ()    => localStorage.getItem("sf_token");
+export const setToken     = (t)   => localStorage.setItem("sf_token", t);
+export const clearToken   = ()    => localStorage.removeItem("sf_token");
+
+export const getUsuario   = ()    => { try { return JSON.parse(localStorage.getItem("sf_usuario")); } catch { return null; } };
+export const setUsuario   = (u)   => localStorage.setItem("sf_usuario", JSON.stringify(u));
+export const clearUsuario = ()    => localStorage.removeItem("sf_usuario");
+
+export const isAdmin   = (u) => u?.role === "admin";
+export const isGerente = (u) => u?.role === "gerente";
+export const isAdmin_ou_Gerente = (u) => ["admin","gerente"].includes(u?.role);
+
+// Retorna empresa_id do usuário logado (null para admin)
+export const getEmpresaId = (u) => u?.empresa_id ?? null;
 
 function authHeaders() {
     const token = getToken();
@@ -26,59 +36,59 @@ async function request(method, path, body = null) {
     return data;
 }
 
-// ─── AUTH ─────────────────────────────────────
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
 export const authAPI = {
-    login:    (email, senha) => request("POST", "/auth/login",    { email, senha }),
-    registro: (data)         => request("POST", "/auth/registro", data),
+    // Retorna { access_token, token_type, usuario }
+    login: (email, senha) => request("POST", "/auth/login", { email, senha }),
+    me:    ()             => request("GET",  "/auth/me"),
 };
 
-// ─── EMPRESAS ─────────────────────────────────
+// ─── EMPRESAS ─────────────────────────────────────────────────────────────────
 export const empresasAPI = {
-    listar:         ()              => request("GET",    "/empresas/"),
-    obter:          (id)            => request("GET",    `/empresas/${id}`),
-    obterCompleto:  (id)            => request("GET",    `/empresas/${id}/completo`),
-    criar:          (data)          => request("POST",   "/empresas/", data),
-    atualizar:      (id, data)      => request("PUT",    `/empresas/${id}`, data),
-    deletar:        (id)            => request("DELETE", `/empresas/${id}`),
+    listar:        ()           => request("GET",    "/empresas/"),
+    obter:         (id)         => request("GET",    `/empresas/${id}`),
+    obterCompleto: (id)         => request("GET",    `/empresas/${id}/completo`),
+    criar:         (data)       => request("POST",   "/empresas/", data),
+    atualizar:     (id, data)   => request("PUT",    `/empresas/${id}`, data),
+    deletar:       (id)         => request("DELETE", `/empresas/${id}`),
 };
 
-// ─── LINHAS ───────────────────────────────────
+// ─── LINHAS ───────────────────────────────────────────────────────────────────
 export const linhasAPI = {
-    listar:   (empresaId)         => request("GET",    `/empresas/${empresaId}/linhas`),
-    criar:    (empresaId, data)   => request("POST",   `/empresas/${empresaId}/linhas`, data),
-    atualizar:(empresaId, id, data) => request("PUT",  `/empresas/${empresaId}/linhas/${id}`, data),
-    deletar:  (empresaId, id)     => request("DELETE", `/empresas/${empresaId}/linhas/${id}`),
-    listarMaquinas: (empresaId, linhaId) =>
-        request("GET", `/empresas/${empresaId}/linhas/${linhaId}/maquinas`),
+    listar:         (empId)          => request("GET",    `/empresas/${empId}/linhas`),
+    criar:          (empId, data)    => request("POST",   `/empresas/${empId}/linhas`, data),
+    atualizar:      (empId, id, data)=> request("PUT",    `/empresas/${empId}/linhas/${id}`, data),
+    deletar:        (empId, id)      => request("DELETE", `/empresas/${empId}/linhas/${id}`),
+    listarMaquinas: (empId, linhaId) => request("GET",    `/empresas/${empId}/linhas/${linhaId}/maquinas`),
 };
 
-// ─── MÁQUINAS ─────────────────────────────────
+// ─── MÁQUINAS ─────────────────────────────────────────────────────────────────
 export const maquinasAPI = {
-    listarPorEmpresa: (empresaId) => request("GET",    `/maquinas/empresa/${empresaId}`),
-    obterPorSerial:   (serial)    => request("GET",    `/maquinas/serial/${serial}`),
-    obter:            (id)        => request("GET",    `/maquinas/${id}`),
-    criar:            (data)      => request("POST",   "/maquinas/", data),
-    atualizar:        (id, data)  => request("PUT",    `/maquinas/${id}`, data),
-    deletar:          (id)        => request("DELETE", `/maquinas/${id}`),
+    listarPorEmpresa: (empId)       => request("GET",    `/maquinas/empresa/${empId}`),
+    obterPorSerial:   (serial)      => request("GET",    `/maquinas/serial/${serial}`),
+    obter:            (id)          => request("GET",    `/maquinas/${id}`),
+    criar:            (data)        => request("POST",   "/maquinas/", data),
+    atualizar:        (id, data)    => request("PUT",    `/maquinas/${id}`, data),
+    deletar:          (id)          => request("DELETE", `/maquinas/${id}`),
 };
 
-// ─── METAS OEE ────────────────────────────────
+// ─── METAS ────────────────────────────────────────────────────────────────────
 export const metasAPI = {
     obter:  (maquinaId) => request("GET",  `/maquinas/${maquinaId}/meta`),
     salvar: (data)      => request("POST", "/maquinas/meta", data),
 };
 
-// ─── USUÁRIOS ─────────────────────────────────
+// ─── USUÁRIOS ─────────────────────────────────────────────────────────────────
 export const usuariosAPI = {
-    listar:    (empresaId) => request("GET",    `/usuarios/empresa/${empresaId}`),
-    criar:     (data)      => request("POST",   "/usuarios/", data),
-    atualizar: (id, data)  => request("PUT",    `/usuarios/${id}`, data),
-    deletar:   (id)        => request("DELETE", `/usuarios/${id}`),
+    listar:    (empId) => request("GET",    `/usuarios/empresa/${empId}`),
+    criar:     (data)  => request("POST",   "/usuarios/", data),
+    atualizar: (id, d) => request("PUT",    `/usuarios/${id}`, d),
+    deletar:   (id)    => request("DELETE", `/usuarios/${id}`),
 };
 
-// ─── MÉTRICAS ─────────────────────────────────
+// ─── MÉTRICAS ─────────────────────────────────────────────────────────────────
 export const metricsAPI = {
-    atual:     (serial, janela = "-1h")         => request("GET", `/metrics/${serial}/atual?janela=${janela}`),
-    oee:       (serial, janela = "-8h")          => request("GET", `/metrics/${serial}/oee?janela=${janela}`),
-    historico: (serial, field, janela = "-24h")  => request("GET", `/metrics/${serial}/historico/${field}?janela=${janela}`),
+    atual:     (serial, janela="-1h")         => request("GET", `/metrics/${serial}/atual?janela=${janela}`),
+    oee:       (serial, janela="-8h")          => request("GET", `/metrics/${serial}/oee?janela=${janela}`),
+    historico: (serial, field, janela="-24h")  => request("GET", `/metrics/${serial}/historico/${field}?janela=${janela}`),
 };
