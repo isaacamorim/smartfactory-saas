@@ -123,7 +123,7 @@ export default function LoginPage({ onLogin, auth }) {
                     )}
 
                     <div style={{ fontSize:11, color:"var(--text3)", textAlign:"center", marginTop:28 }}>
-                        NH Alimentos · Plataforma Industrial IIoT
+                        Tecnologia NH · Plataforma Industrial IIoT
                     </div>
                 </div>
             </div>

@@ -24,3 +24,5 @@ build/
 # system
 .DS_Store
 Thumbs.db
+
+.claude/

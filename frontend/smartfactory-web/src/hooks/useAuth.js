@@ -1,12 +1,11 @@
 // src/hooks/useAuth.js
-// Hook de autenticação — persiste usuário no localStorage
 import { useState, useCallback } from "react";
 import { authAPI, setToken, clearToken, setUsuario, clearUsuario, getToken, getUsuario } from "../services/api";
 
 export function useAuth() {
     const [usuario, setUsuarioState] = useState(() => getUsuario());
-    const [loading,  setLoading]  = useState(false);
-    const [erro,     setErro]     = useState(null);
+    const [loading, setLoading]  = useState(false);
+    const [erro,    setErro]     = useState(null);
 
     const login = useCallback(async (email, senha) => {
         setLoading(true); setErro(null);
@@ -36,10 +35,10 @@ export function useAuth() {
         erro,
         login,
         logout,
-        isLogado:  !!usuario,
-        isAdmin:   usuario?.role === "admin",
-        isGerente: usuario?.role === "gerente",
-        isOperador:usuario?.role === "operador",
-        empresaId: usuario?.empresa_id ?? null,
+        isLogado:   !!usuario,
+        isAdmin:    usuario?.role === "admin",
+        isGerente:  usuario?.role === "gerente",
+        isOperador: usuario?.role === "operador",
+        empresaId:  usuario?.empresa_id ?? null,
     };
 }

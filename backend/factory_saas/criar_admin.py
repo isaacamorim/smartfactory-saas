@@ -15,7 +15,7 @@ from app.models import RoleEnum
 
 db = SessionLocal()
 
-email = "admin@smartfactory.com"
+email = "isaacvinici.carvalho@gmail.com"
 existente = crud.get_usuario_by_email(db, email)
 
 if existente:
@@ -30,10 +30,10 @@ else:
         empresa_id = None,
         nome       = "Administrador",
         email      = email,
-        senha      = "Admin@2025",
+        senha      = "123456",
         role       = RoleEnum.admin,
     ))
     print(f"✓ Admin criado: {usuario.email} (id={usuario.id})")
-    print("  Senha: Admin@2025  ← troque no primeiro login!")
+    print("  Senha: 123456  ← troque no primeiro login!")
 
 db.close()

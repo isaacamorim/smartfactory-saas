@@ -1,0 +1,49 @@
+VAR_GLOBAL
+    Pubs : ARRAY[1..gc_uiMaxPubs] OF MQTT_PUBLISH;
+    Subs : ARRAY[1..gc_uiMaxSubs] OF MQTT_SUBSCRIBE;
+
+    (*-- -- -- -- -- -- -- -- --TÓPICOS DE PUBLICAÇÃO, ADICIONE, REMOVA OU MODIFIQUE CONFORME NECESSIDADE-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --*)
+        PUBLISH_TOPICS : ARRAY[1..gc_uiMaxPubs] OF STRING : = [
+            'XP340/status_1',
+            'XP340/status_2',
+
+            'XP340/turno',
+
+            'XP340/pesos_1',
+            'XP340/pesos_2',
+            'XP340/pesos_3',
+
+            'XP340/semana_1',
+            'XP340/semana_2',
+
+            'XP340/config_1',
+            'XP340/config_2',
+
+            'XP340/kpi_1',
+            'XP340/kpi_2',
+            
+            'XP340/heartbeat'
+            
+        ];
+
+    (*-- -- -- -- -- -- -- -- --TÓPICOS DE ASSINATURA, ADICIONE, REMOVA OU MODIFIQUE CONFORME NECESSIDADE-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --*)
+        SUBSCRIBE_TOPICS : ARRAY[1..gc_uiMaxSubs] OF STRING : = [
+            'XP340/Ciclo_Manual',
+            'XP340/Ciclo_Automatico',
+            'XP340/NH'
+        ];
+
+    (*-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -STATUS DE PUBLICAÇÕES E MENSAGENS RECEBIDAS-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --*)
+        MQTT_FB_Pub_Status : ARRAY[1..gc_uiMaxPubs] OF BOOL;
+        MQTT_FB_Received_Messages : ARRAY[1..gc_uiMaxSubs] OF MQTT_RECEIVED;
+
+    (*-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -PAYLOADS DE PUBLICAÇÕES E ASSINATURAS-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --*)
+        PUBS_PAYLOADS : ARRAY[1..gc_uiMaxPubs] OF STRING(128);
+        SUBS_PAYLOADS : ARRAY[1..gc_uiMaxSubs] OF STRING(128);
+
+    (*-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -VARIÁVEIS AUXILIARES DE PUBLICAÇÕES E ASSINATURAS-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --*)
+        PUBS_PAYLOADS_OLD : ARRAY[1..gc_uiMaxPubs] OF STRING(128);
+
+        NH : STRING(32);
+
+END_VAR

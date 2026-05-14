@@ -1,90 +1,143 @@
 // src/pages/OEEPage.jsx
-import { useState } from "react";
-import { OEEGauge, ProgressBar, PageHeader } from "../components/UI";
-import { MACHINES } from "../data/mockData";
+import { useState, useEffect } from "react";
+import { PageHeader, OEEGauge, ProgressBar } from "../components/UI";
+import { getStatus, getKPIs, getTurno, getSemana, calcularOEE } from "../services/mqttData";
 
-const OEE_HOURS = ["06:00","07:00","08:00","09:00","10:00","11:00","12:00","13:00","14:00"];
+const SERIAL = "EVA1000-00021";
+const META_PAC_MIN = 45;
+const DIAS = ["seg","ter","qua","qui","sex","sab","dom"];
+const DIAS_LABEL = ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"];
+const TURNO_COLORS = ["var(--primary)", "var(--info)", "var(--green)"];
 
-export default function OEEPage() {
-  const [serial, setSerial] = useState(MACHINES[0].serial);
-  const machine = MACHINES.find(m => m.serial === serial) ?? MACHINES[0];
+export default function OEEPage({ auth }) {
+    const [oee,    setOee]    = useState(null);
+    const [turno,  setTurno]  = useState(null);
+    const [semana, setSemana] = useState(null);
 
-  const components = [
-    { label:"OEE",             value: machine.oee, color:"var(--cyan)",   formula:"D × P × Q" },
-    { label:"DISPONIBILIDADE", value: 88.1,         color:"var(--cyan)",   formula:"Tempo Prod / Tempo Plan" },
-    { label:"PERFORMANCE",     value: 91.4,         color:"var(--green)",  formula:"Prod Real / Prod Teórica" },
-    { label:"QUALIDADE",       value: 98.2,         color:"var(--yellow)", formula:"Boas / Total Produzido" },
-  ];
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <PageHeader
-        title="Análise OEE"
-        sub="OVERALL EQUIPMENT EFFECTIVENESS"
-        action={
-          <select className="sf-select" style={{ width: 220 }} value={serial} onChange={e => setSerial(e.target.value)}>
-            {MACHINES.map(m => <option key={m.serial} value={m.serial}>{m.serial}</option>)}
-          </select>
+    useEffect(() => {
+        async function load() {
+            const [s, k, t, sm] = await Promise.all([
+                getStatus(SERIAL), getKPIs(SERIAL),
+                getTurno(SERIAL),  getSemana(SERIAL),
+            ]);
+            setOee(calcularOEE(s, k, META_PAC_MIN));
+            setTurno(t);
+            setSemana(sm);
         }
-      />
+        load();
+        const i = setInterval(load, 10000);
+        return () => clearInterval(i);
+    }, []);
 
-      {/* 4 Gauge cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14 }}>
-        {components.map(c => (
-          <div key={c.label} className="sf-card" style={{ padding: 20 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--text3)", marginBottom: 12 }}>{c.label}</div>
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              <OEEGauge value={c.value} size={130} color={c.color} label={c.label.slice(0,5)} />
+    if (!oee || !semana) return (
+        <div style={{ padding:40, textAlign:"center", fontFamily:"var(--font-mono)", color:"var(--text3)" }}>
+            Carregando OEE...
+        </div>
+    );
+
+    const maxDia = Math.max(...DIAS.map(d => semana[d].reduce((a,b) => a+b, 0)), 1);
+
+    return (
+        <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+            <PageHeader title="OEE" sub={`${SERIAL} · TEMPO REAL`}
+                action={<span className="badge badge-live">● LIVE</span>} />
+
+            {/* Gauges */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:14 }}>
+                {[
+                    ["OEE",             oee.oee,             "var(--primary)", 75],
+                    ["Disponibilidade", oee.disponibilidade,  "var(--info)",   85],
+                    ["Performance",     oee.performance,      "var(--green)",  90],
+                    ["Qualidade",       oee.qualidade,        "var(--yellow)", 98],
+                ].map(([l,v,c,meta]) => (
+                    <div key={l} className="sf-card" style={{ padding:20, textAlign:"center" }}>
+                        <OEEGauge value={v} size={120} color={c} label={l} />
+                        <div style={{ marginTop:10, fontFamily:"var(--font-mono)", fontSize:10,
+                            color: v >= meta ? "var(--green)" : "var(--red)" }}>
+                            Meta: {meta}% · {v >= meta ? "✓" : "✕"}
+                        </div>
+                    </div>
+                ))}
             </div>
-            <div className="prog-track" style={{ marginTop: 14 }}>
-              <div className="prog-fill" style={{ width: `${c.value}%`, background: c.color }} />
+
+            {/* Produção por turno (hoje) */}
+            <div className="sf-card">
+                <div className="sf-card-header">
+                    <span className="sf-card-title">Produção por Turno — Hoje</span>
+                    <span style={{ fontFamily:"var(--font-mono)", fontSize:11, color:"var(--text3)" }}>
+                        Lote #{turno.lote}
+                    </span>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:0 }}>
+                    {[turno.t1, turno.t2, turno.t3].map((v, i) => (
+                        <div key={i} style={{
+                            padding:"20px 24px",
+                            borderRight: i < 2 ? "1px solid var(--border)" : "none",
+                            borderLeft: i === 0 ? `3px solid ${TURNO_COLORS[i]}` : "none",
+                        }}>
+                            <div style={{ fontSize:11, fontWeight:600, color:"var(--text3)",
+                                textTransform:"uppercase", marginBottom:8 }}>
+                                Turno {i+1}
+                            </div>
+                            <div style={{ fontFamily:"var(--font-display)", fontSize:40, fontWeight:800,
+                                color: v > 0 ? TURNO_COLORS[i] : "var(--text3)" }}>
+                                {v.toLocaleString("pt-BR")}
+                            </div>
+                            <div style={{ fontFamily:"var(--font-mono)", fontSize:10, color:"var(--text3)", marginTop:4 }}>
+                                unidades
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text3)", marginTop: 6, letterSpacing: 1 }}>{c.formula}</div>
-          </div>
-        ))}
-      </div>
 
-      {/* Trend chart */}
-      <div className="sf-card">
-        <div className="sf-card-header">
-          <span className="sf-card-title">Histórico OEE — Últimas 8h</span>
-          <span className="badge badge-info">{serial}</span>
+            {/* Gráfico semanal por turno */}
+            <div className="sf-card">
+                <div className="sf-card-header">
+                    <span className="sf-card-title">Produção Semanal por Turno</span>
+                </div>
+                <div className="sf-card-body">
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:8 }}>
+                        {DIAS.map((dia, di) => {
+                            const [t1,t2,t3] = semana[dia];
+                            const total = t1+t2+t3;
+                            return (
+                                <div key={dia} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+                                    {/* Barra empilhada */}
+                                    <div style={{ width:"100%", height:120, display:"flex", flexDirection:"column-reverse",
+                                        background:"var(--bg2)", borderRadius:4, overflow:"hidden", position:"relative" }}>
+                                        {[t1,t2,t3].map((v,i) => (
+                                            <div key={i} style={{
+                                                height: `${(v/maxDia)*100}%`,
+                                                background: TURNO_COLORS[i],
+                                                opacity: v > 0 ? 1 : 0,
+                                                transition:"height .5s",
+                                                borderTop: `1px solid rgba(255,255,255,.2)`,
+                                            }} />
+                                        ))}
+                                    </div>
+                                    <div style={{ fontFamily:"var(--font-mono)", fontSize:9, color:"var(--text3)" }}>
+                                        {DIAS_LABEL[di]}
+                                    </div>
+                                    <div style={{ fontFamily:"var(--font-display)", fontSize:12, fontWeight:700,
+                                        color: total > 0 ? "var(--text)" : "var(--text3)" }}>
+                                        {total > 0 ? total.toLocaleString("pt-BR") : "—"}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    {/* Legenda */}
+                    <div style={{ display:"flex", gap:16, marginTop:12 }}>
+                        {["Turno 1","Turno 2","Turno 3"].map((l,i) => (
+                            <div key={l} style={{ display:"flex", alignItems:"center", gap:6 }}>
+                                <div style={{ width:10, height:10, borderRadius:2, background:TURNO_COLORS[i] }} />
+                                <span style={{ fontFamily:"var(--font-mono)", fontSize:10, color:"var(--text3)" }}>{l}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
         </div>
-        <div className="sf-card-body">
-          <svg width="100%" height="140" viewBox="0 0 800 140" preserveAspectRatio="none" style={{ overflow: "visible" }}>
-            {[0,25,50,75,100].map(y => (
-              <line key={y} x1="0" y1={140-y*1.4} x2="800" y2={140-y*1.4} stroke="var(--border)" strokeWidth="1" />
-            ))}
-            <polyline
-              points="0,78 100,70 200,74 300,60 400,64 500,52 600,57 700,46 800,50"
-              fill="none" stroke="var(--cyan)" strokeWidth="2.5"
-              style={{ filter: "drop-shadow(0 0 4px var(--cyan))" }}
-            />
-            <polyline
-              points="0,78 100,70 200,74 300,60 400,64 500,52 600,57 700,46 800,50 800,140 0,140"
-              fill="rgba(0,229,255,0.06)" stroke="none"
-            />
-            {/* Meta line */}
-            <line x1="0" y1={140-85*1.4} x2="800" y2={140-85*1.4} stroke="var(--orange)" strokeWidth="1.5" strokeDasharray="8 4" />
-            <text x="806" y={140-85*1.4+4} fontFamily="Share Tech Mono" fontSize="9" fill="var(--orange)">META 85%</text>
-          </svg>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
-            {OEE_HOURS.map(h => <span key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text3)" }}>{h}</span>)}
-          </div>
-        </div>
-      </div>
-
-      {/* Meta vs realizado */}
-      <div className="sf-card">
-        <div className="sf-card-header"><span className="sf-card-title">Metas vs Realizado</span></div>
-        <div className="sf-card-body">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
-            <ProgressBar label="Disponibilidade" value={88.1} meta={85} color="var(--cyan)"   />
-            <ProgressBar label="Performance"     value={91.4} meta={85} color="var(--green)"  />
-            <ProgressBar label="Qualidade"       value={98.2} meta={98} color="var(--yellow)" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    );
 }

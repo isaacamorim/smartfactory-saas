@@ -1,0 +1,19 @@
+
+administrador poder criar novos administradores, mas acho q so pertencentes a novo horizonte
+
+nao sei se daria pra colocar um SSO, so q teria q ser apenas para contas cadastrasdas
+
+no topo tem MQTT INFLUX API verde dizendo q esta ativo os servidores, mas nem sempre esta atulizado, ent queria q ficasse sempre mostrando o status real e talvez colocar em outro campo tipo confiracoes do oee sla, nao sei se ainda vamos ter algum outro campo de configuracao, ai talvez seja a solucao colocar la, mas em fim em outro lugar
+
+
+
+poder colocar logo das empresas
+
+buscar foto da conta SSO
+
+Gera relatórios automáticos: produtividade, consumo e histórico de paradas em um clique.
+
+Prevê falhas: inteligência analítica identifica desvios de operação.
+
+Centraliza informações: apresenta o histórico de todos os equipamentos conectados em uma única interface simples e intuitiva.
+

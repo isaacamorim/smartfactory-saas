@@ -1,0 +1,27 @@
+
+ssh root@191.252.217.250
+
+siteNh!25
+
+
+
+cd /opt/smartfactory-saas/frontend/smartfactory-web
+npm run dev -- --host
+
+
+
+cd /opt/smartfactory-saas/backend/factory_saas
+source /opt/venv/bin/activate
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+## -- Logs em tempo real:
+
+journalctl -u smartfactory-frontend -f
+journalctl -u smartfactory-backend -f
+
+
+mosquitto_sub -h localhost -t "XP340/#" -u clp_eva1000 -P 123456 -v
+
+mosquitto_pub -h localhost -t "XP340/teste" -m "1" -u clp_eva1000 -P 123456
+
+mosquitto_sub -h localhost -t "#" -u clp_eva1000 -P 123456 -v
