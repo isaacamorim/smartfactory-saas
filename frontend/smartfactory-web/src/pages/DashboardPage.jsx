@@ -14,12 +14,28 @@ const META_PAC_MIN = 45;
 // ─────────────────────────────────────────────
 
 const MACHINE_STATE_CHIP = {
-    RUNNING: <span className="chip chip-green">● RODANDO</span>,
-    MANUAL: <span className="chip chip-orange">● MANUAL</span>,
-    IDLE: <span className="chip chip-gray">● PARADA</span>,
-    STALE: <span className="chip chip-orange">⚠ SEM DADOS</span>,
-    OFFLINE: <span className="chip chip-red">✕ OFFLINE</span>,
-};
+
+    RUNNING:
+        <span className="chip chip-green">
+            ● RODANDO
+        </span>,
+
+    IDLE:
+        <span className="chip chip-orange">
+            ● PARADA
+        </span>,
+
+    OFFLINE:
+        <span className="chip chip-red">
+            ✕ OFFLINE
+        </span>,
+
+    STALE:
+        <span className="chip chip-orange">
+            ⚠ SEM DADOS
+        </span>
+
+}
 
 const getMachineStateChip = (machineState) =>
     MACHINE_STATE_CHIP[machineState] ?? <span className="chip chip-gray">— DESCONHECIDO</span>;
@@ -67,7 +83,23 @@ export default function DashboardPage({ auth }) {
 
     // ── Valores derivados ────────────────────
 
-    const ultimoPesoKg = ((kpis.ult_peso ?? 0) / 10).toFixed(3);
+    const peso = Number(
+        pesos?.liq
+    )
+
+    const ultimoPesoKg =
+        (
+            (
+                peso > -999999
+                    ?
+                    peso
+                    :
+                    0
+            )
+            /
+            1000
+        )
+            .toFixed(3);
     const nok = kpis.nok ?? 0;
     const ok = kpis.ok ?? 0;
     const nok_pct = ((nok / ((ok + nok) || 1)) * 100).toFixed(1);
@@ -135,11 +167,17 @@ export default function DashboardPage({ auth }) {
                     unit="pct/min"
                     accent="var(--info)"
                     delta={`Meta: ${META_PAC_MIN} pct/min`}
-                    deltaPos={(status.pac_min ?? 0) >= META_PAC_MIN}
+                    deltaPos={(status.vel ?? 0) >= META_PAC_MIN}
                 />
                 <StatCard
                     label="Produção Turno"
-                    value={(turno.t1 ?? 0).toLocaleString("pt-BR")}
+                    value={
+                        (
+                            kpis.prod_turno
+                            ??
+                            0
+                        ).toLocaleString("pt-BR")
+                    }
                     unit="un"
                     accent="var(--green)"
                     delta={`NOK: ${nok} un · ${nok_pct}%`}
@@ -252,9 +290,51 @@ export default function DashboardPage({ auth }) {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 0 }}>
                     {[
                         ["Velocidade", (status.vel ?? "—") + " rpm", "var(--info)"],
-                        ["Pacotes/min", status.pac_min ?? "—", "var(--primary)"],
-                        ["Modo", status.auto ? "AUTO" : status.manual ? "MANUAL" : "PARADO", status.auto ? "var(--green)" : "var(--orange)"],
-                        ["Turno Atual", `Turno ${status.turno ?? "—"}`, "var(--text)"],
+                        [
+                            "Pacotes/min",
+                            status.pac_min ?? "—",
+                            "var(--primary)"
+                        ],
+                        [
+                            "Modo",
+
+                            status.ciclo === 1
+                                ?
+                                "RODANDO"
+                                :
+                                "PARADA",
+
+                            status.ciclo === 1
+                                ?
+                                "var(--green)"
+                                :
+                                "var(--orange)"
+                        ],
+                        [
+                            "Turno Atual",
+
+                            turno.t1 > 0
+                                ?
+                                "Turno 1"
+
+                                :
+
+                                turno.t2 > 0
+                                    ?
+                                    "Turno 2"
+
+                                    :
+
+                                    turno.t3 > 0
+                                        ?
+                                        "Turno 3"
+
+                                        :
+
+                                        "—",
+
+                            "var(--text)"
+                        ],
                         ["Total Geral", (status.total ?? 0).toLocaleString("pt-BR") + " un", "var(--text)"],
                     ].map(([l, v, c], i) => (
                         <div key={l} style={{ padding: "16px 20px", borderRight: i < 4 ? "1px solid var(--border)" : "none" }}>

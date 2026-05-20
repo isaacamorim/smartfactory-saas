@@ -3,8 +3,10 @@ from fastapi import APIRouter, HTTPException, Depends
 from influxdb_client import InfluxDBClient
 from app.auth import get_current_user
 from app.models import Usuario
-import os
+from datetime import datetime, timezone
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
+import os
 
 router = APIRouter(prefix="/metrics", tags=["Métricas"])
 
@@ -41,70 +43,39 @@ def influx_health():
 
 
 # ─── HELPER ───────────────────────────────────────────────────────────────────
-def query_last(machine: str, tipo: str, janela: Optional[str] = None) -> dict:
+def query_last(machine: str, tipo: str, janela=None):
 
-    janela = janela or JANELAS.get(tipo, "-5m")
+    janela = janela or JANELAS.get(tipo, "-24h")
 
     flux = f"""
-from(bucket: "{INFLUX_BUCKET}")
-  |> range(start: {janela})
+    from(bucket:"{INFLUX_BUCKET}")
+    |> range(start:{janela})
 
-  |> filter(fn: (r) =>
-      r["_measurement"] == "machine_metrics"
-  )
+    |> filter(fn:(r)=>
+        r["_measurement"]=="machine_metrics"
+    )
 
-  |> pivot(
-      rowKey:["_time"],
-      columnKey:["_field"],
-      valueColumn:"_value"
-  )
+    |> filter(fn:(r)=>
+        r["machine"]=="{machine}"
+    )
 
-  |> filter(fn: (r) =>
-      r["machine"] == "{machine}"
-  )
+    |> filter(fn:(r)=>
+        r["type"]=="{tipo}"
+    )
 
-  |> filter(fn: (r) =>
-      r["type"] == "{tipo}"
-  )
-
-  |> sort(columns: ["_time"], desc: true)
-
-  |> limit(n: 1)
-"""
+    |> group(columns:["_field"])
+    |> last()
+    """
 
     result = {}
 
-    try:
+    with get_client() as client:
 
-        with get_client() as client:
+        tables = client.query_api().query(flux)
 
-            tables = client.query_api().query(flux)
-
-            for table in tables:
-
-                for record in table.records:
-
-                    values = record.values
-
-                    for key, value in values.items():
-
-                        # ignora metadados influx
-                        if key.startswith("_"):
-                            continue
-
-                        # ignora machine/type
-                        if key in ["result", "table", "machine", "type"]:
-                            continue
-
-                        # ignora valores nulos
-                        if value is None:
-                            continue
-
-                        result[key] = value
-
-    except Exception as e:
-
-        raise HTTPException(status_code=503, detail=f"InfluxDB error: {e}")
+        for table in tables:
+            for record in table.records:
+                result[record.get_field()] = record.get_value()
 
     return result
 
@@ -160,15 +131,14 @@ def get_kpis(machine: str, current_user: Usuario = Depends(get_current_user)):
 
 @router.get("/{machine:path}/all")
 def get_all(machine: str, current_user: Usuario = Depends(get_current_user)):
-    return {
-        "heartbeat": query_last(machine, "heartbeat"),
-        "status": query_last(machine, "status"),
-        "pesos": query_last(machine, "pesos"),
-        "turno": query_last(machine, "turno"),
-        "kpis": query_last(machine, "kpis"),  # ← era "kpi", corrigido
-        "config": query_last(machine, "config"),
-        "semana": query_last(machine, "semana"),
-    }
+
+    tipos = ["heartbeat", "status", "pesos", "turno", "kpis", "config", "semana"]
+
+    with ThreadPoolExecutor(max_workers=7) as executor:
+
+        futures = {tipo: executor.submit(query_last, machine, tipo) for tipo in tipos}
+
+        return {tipo: future.result() for tipo, future in futures.items()}
 
 
 # ─── ENDPOINTS ────────────────────────────────────────────────
@@ -192,3 +162,403 @@ def get_status(machine: str):
         raise HTTPException(status_code=404, detail="Sem dados recentes de status")
 
     return data
+
+
+@router.get("/machines")
+def get_machines():
+
+    flux = f"""
+    from(bucket:"{INFLUX_BUCKET}")
+      |> range(start:-30d)
+      |> filter(fn:(r)=>r["_measurement"]=="machine_metrics")
+      |> filter(fn:(r)=>exists r.machine)
+      |> keep(columns:["machine"])
+      |> distinct(column:"machine")
+    """
+
+    with get_client() as client:
+
+        tables = client.query_api().query(flux)
+
+        machines = []
+
+        for table in tables:
+            for row in table.records:
+
+                machine = row.values.get("machine")
+
+                if machine:
+                    machines.append(machine)
+
+    return sorted(list(set(machines)))
+
+
+@router.get("/overview")
+def overview():
+
+    machines = get_machines()
+
+    dados = []
+
+    for machine in machines:
+
+        resumo = machine_summary(machine)
+
+        dados.append(
+            {
+                "machine": resumo["machine"],
+                "online": resumo["online"],
+                "last_seen": resumo["last_seen"],
+                "vel": resumo["status"].get("vel"),
+                "prod_turno": resumo["status"].get("prod_turno"),
+                "turno": resumo["status"].get("turno"),
+                "total": resumo["status"].get("total"),
+            }
+        )
+
+    return dados
+
+
+@router.get("/{machine}/summary")
+def machine_summary(machine: str):
+
+    flux = f"""
+    from(bucket:"{INFLUX_BUCKET}")
+      |> range(start:-24h)
+      |> filter(fn:(r)=>r["_measurement"]=="machine_metrics")
+      |> filter(fn:(r)=>r["machine"]=="{machine}")
+      |> last()
+    """
+
+    with get_client() as client:
+
+        tables = client.query_api().query(flux)
+
+        data = {}
+        last_seen = None
+
+        for table in tables:
+            for row in table.records:
+
+                data[row.get_field()] = row.get_value()
+                last_seen = row.get_time()
+
+        if not data:
+
+            return {"machine": machine, "online": False, "message": "Sem dados"}
+
+        delta = (
+            datetime.now(timezone.utc)
+            -
+            last_seen.replace(tzinfo=timezone.utc)
+        ).total_seconds()
+
+        online = delta < 300
+
+        return {
+            "machine": machine,
+            "online": online,
+            "last_seen": last_seen,
+            "status": data,
+        }
+
+
+@router.get("/dashboard")
+def dashboard():
+
+    dados = overview()
+
+    online = [m for m in dados if m["online"]]
+
+    return {
+        "machines_total": len(dados),
+        "machines_online": len(online),
+        "machines_offline": len(dados) - len(online),
+        "prod_turno_total": sum(m["prod_turno"] or 0 for m in online),
+        "total_pecas": sum(m["total"] or 0 for m in online),
+        "vel_media": round(sum(m["vel"] or 0 for m in online) / max(len(online), 1), 2),
+        "turnos": {
+            "t1": sum(1 for m in online if m["turno"] == 1),
+            "t2": sum(1 for m in online if m["turno"] == 2),
+            "t3": sum(1 for m in online if m["turno"] == 3),
+        },
+        "offline": [m["machine"] for m in dados if not m["online"]],
+    }
+
+
+@router.get("/{machine}/history")
+def history(machine: str):
+
+    flux = f"""
+    from(bucket:"{INFLUX_BUCKET}")
+      |> range(start:-24h)
+      |> filter(fn:(r)=>r["_measurement"]=="machine_metrics")
+      |> filter(fn:(r)=>r["machine"]=="{machine}")
+      |> filter(fn:(r)=>
+            r["_field"]=="prod_turno"
+            or
+            r["_field"]=="vel"
+      )
+      |> aggregateWindow(
+            every:5m,
+            fn:last,
+            createEmpty:false
+      )
+    """
+
+    with get_client() as client:
+
+        tables = client.query_api().query(flux)
+
+        historico = []
+
+        for table in tables:
+            for row in table.records:
+
+                historico.append(
+                    {
+                        "time": row.get_time(),
+                        "field": row.get_field(),
+                        "value": row.get_value(),
+                    }
+                )
+
+    return historico
+
+
+@router.get("/{machine}/production")
+def production(machine: str):
+
+    historico = history(machine)
+
+    dados = []
+    anterior = None
+
+    for item in historico:
+
+        if item["field"] != "prod_turno":
+            continue
+
+        atual = item["value"]
+
+        if anterior is None:
+            incremento = 0
+
+        else:
+            incremento = max(atual - anterior, 0)
+
+        dados.append({"time": item["time"], "producao": incremento})
+
+        anterior = atual
+
+    return dados
+
+
+@router.get("/{machine}/hourly")
+def hourly(machine: str):
+
+    prod = production(machine)
+
+    horas = {}
+
+    for item in prod:
+
+        if isinstance(item["time"], str):
+
+            hora = item["time"][:13] + ":00"
+
+        else:
+
+            hora = item["time"].strftime("%Y-%m-%d %H:00")
+
+        horas[hora] = horas.get(hora, 0) + item["producao"]
+
+    return horas
+
+
+@router.get("/{machine}/oee")
+def oee(machine: str):
+
+    resumo = machine_summary(machine)
+
+    if not resumo["online"]:
+
+        return {"oee": 0, "disponibilidade": 0, "performance": 0, "qualidade": 0}
+
+    vel = resumo["status"].get("vel", 0)
+
+    disponibilidade = 100
+    performance = min((vel / 12) * 100, 100)
+
+    qualidade = 100
+
+    oee = (disponibilidade * performance * qualidade) / 10000
+
+    return {
+        "oee": round(oee, 2),
+        "disponibilidade": disponibilidade,
+        "performance": round(performance, 2),
+        "qualidade": qualidade,
+    }
+
+
+@router.get("/alerts")
+def alerts():
+
+    avisos = []
+
+    maquinas = get_machines()
+
+    for machine in maquinas:
+
+        resumo = machine_summary(machine)
+
+        if not resumo["online"]:
+
+            avisos.append(
+                {"machine": machine, "tipo": "offline", "mensagem": "Sem dados > 2 min"}
+            )
+
+            continue
+
+        vel = resumo["status"].get("vel", 0)
+
+        if vel < 5:
+
+            avisos.append(
+                {
+                    "machine": machine,
+                    "tipo": "baixa_vel",
+                    "mensagem": f"Velocidade baixa ({vel})",
+                }
+            )
+
+        prod = resumo["status"].get("prod_turno", 0)
+
+        if prod == 0:
+
+            avisos.append(
+                {"machine": machine, "tipo": "sem_producao", "mensagem": "Sem produção"}
+            )
+
+    return avisos
+
+
+@router.get("/ranking")
+def ranking():
+
+    maquinas = get_machines()
+
+    resultado = []
+
+    for machine in maquinas:
+
+        resumo = machine_summary(machine)
+
+        status = resumo.get("status", {})
+
+        resultado.append(
+            {
+                "machine": machine,
+                "online": resumo["online"],
+                "prod_turno": status.get("prod_turno", 0),
+                "total": status.get("total", 0),
+                "vel": status.get("vel", 0),
+            }
+        )
+
+    resultado.sort(key=lambda x: x["prod_turno"], reverse=True)
+
+    return resultado
+
+
+@router.get("/{machine}/forecast")
+def forecast(machine: str):
+
+    horas = hourly(machine)
+
+    valores = list(horas.values())
+
+    if not valores:
+
+        return {"forecast": 0}
+
+    media = sum(valores) / len(valores)
+
+    previsao = media * 8
+
+    return {"media_hora": round(media, 2), "previsao_turno": round(previsao, 0)}
+
+
+@router.get("/{machine}/target")
+def target(machine: str):
+
+    previsao = forecast(machine)
+
+    meta = 2500
+
+    previsto = previsao["previsao_turno"]
+
+    diferenca = previsto - meta
+
+    percentual = (previsto / meta) * 100
+
+    return {
+        "meta": meta,
+        "previsto": previsto,
+        "atingimento": round(percentual, 1),
+        "saldo": diferenca,
+        "status": "OK" if previsto >= meta else "RISCO",
+    }
+
+
+@router.get("/{machine}/stoppages")
+def stoppages(machine: str):
+
+    flux = f"""
+    from(bucket:"{INFLUX_BUCKET}")
+      |> range(start:-24h)
+      |> filter(fn:(r)=>r["_measurement"]=="machine_metrics")
+      |> filter(fn:(r)=>r["machine"]=="{machine}")
+      |> filter(fn:(r)=>r["_field"]=="vel")
+      |> aggregateWindow(every:30s, fn:last)
+    """
+
+    with get_client() as client:
+
+        tables = client.query_api().query(flux)
+
+        dados = []
+
+        for table in tables:
+            for row in table.records:
+
+                dados.append({"time": row.get_time(), "vel": row.get_value()})
+
+    paradas = []
+
+    inicio = None
+
+    for item in dados:
+
+        if item["vel"] == 0:
+
+            if inicio is None:
+
+                inicio = item["time"]
+
+        else:
+
+            if inicio:
+
+                fim = item["time"]
+
+                duracao = (fim - inicio).total_seconds() / 60
+
+                paradas.append(
+                    {"inicio": inicio, "fim": fim, "duracao_min": round(duracao, 2)}
+                )
+
+                inicio = None
+
+    return sorted(paradas, key=lambda x: x["inicio"], reverse=True)

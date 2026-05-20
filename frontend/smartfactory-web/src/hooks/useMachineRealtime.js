@@ -11,7 +11,7 @@ import {
 // CONFIG PADRÃO
 // ─────────────────────────────────────────────
 
-const DEFAULT_REFRESH = 5000; // 5s
+const DEFAULT_REFRESH = 10000; // 10s
 const STALE_TIMEOUT = 15000;  // 15s
 
 const META_PAC_MIN = 45;
@@ -50,6 +50,7 @@ export default function useMachineRealtime(
 
     const mountedRef = useRef(true);
     const intervalRef = useRef(null);
+    const loadingRef =  useRef(false);
 
     // ─────────────────────────────────────────
     // ONLINE / STALE
@@ -83,9 +84,18 @@ export default function useMachineRealtime(
     // LOAD
     // ─────────────────────────────────────────
 
-    const load = useCallback(async () => {
+    const load =
+        useCallback(
+            async () => {
 
-        try {
+                if (
+                    loadingRef.current
+                )
+                    return;
+
+                loadingRef.current = true;
+
+                try {
 
             const data = await getAll(serial);
 
@@ -110,13 +120,22 @@ export default function useMachineRealtime(
 
             setError(err);
 
-        } finally {
+                } finally {
 
-            if (mountedRef.current) {
-                setLoading(false);
-            }
+                    loadingRef.current =
+                        false;
 
-        }
+                    if (
+                        mountedRef.current
+                    ) {
+
+                        setLoading(
+                            false
+                        );
+
+                    }
+
+                }
 
     }, [serial]);
 
@@ -160,25 +179,24 @@ export default function useMachineRealtime(
 
     const machineState = useMemo(() => {
 
-        if (!online) {
+        if (!online)
             return "OFFLINE";
-        }
 
-        if (stale) {
+        if (stale)
             return "STALE";
-        }
 
-        if (status.auto === 1) {
+        if (
+            status.ciclo === 1
+        )
             return "RUNNING";
-        }
-
-        if (status.manual === 1) {
-            return "MANUAL";
-        }
 
         return "IDLE";
 
-    }, [online, stale, status]);
+    }, [
+        online,
+        stale,
+        status.ciclo
+    ]);
 
     // ─────────────────────────────────────────
     // RETURN

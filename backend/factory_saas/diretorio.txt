@@ -1,0 +1,11 @@
+app/
+├── routers/
+│      metrics.py         ← só endpoints
+
+├── services/
+│      influx_service.py  ← consultas influx
+│      metrics_service.py ← overview/dashboard/ranking
+│      oee_service.py
+│      alert_service.py
+
+├── influx.py             ← conexão influx (já existe)

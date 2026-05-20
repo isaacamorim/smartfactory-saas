@@ -78,17 +78,55 @@ export async function checkHealth() {
 }
 
 // ─── OEE calculado no frontend ────────────────────────────────────────────────
-export function calcularOEE(status, kpis, meta_pac_min = 45) {
-    const qualidade = (kpis.ok + kpis.nok) > 0
-        ? (kpis.ok / (kpis.ok + kpis.nok)) * 100 : 0;
-    const performance = meta_pac_min > 0
-        ? Math.min((status.pac_min / meta_pac_min) * 100, 100) : 0;
-    const disponibilidade = 88.1; // TODO: calcular com dados de tempo ligado vs parado do InfluxDB
-    const oee = (disponibilidade * performance * qualidade) / 10000;
+export function calcularOEE(
+    status,
+    kpis,
+    meta_pac_min = 45
+) {
+
+    const performance =
+        Math.min(
+            (
+                (status.vel ?? 0)
+                /
+                meta_pac_min
+            )
+            *
+            100,
+            100
+        );
+
+    const disponibilidade =
+        status.ciclo === 1
+            ?
+            100
+            :
+            0;
+
+    const qualidade = 100;
+
+    const oee =
+        (
+            disponibilidade
+            *
+            performance
+            *
+            qualidade
+        )
+        /
+        10000;
+
     return {
+
         oee: +oee.toFixed(1),
-        disponibilidade: +disponibilidade.toFixed(1),
-        performance: +performance.toFixed(1),
-        qualidade: +qualidade.toFixed(1),
-    };
+
+        disponibilidade,
+
+        performance:
+            +performance.toFixed(1),
+
+        qualidade
+
+    }
+
 }

@@ -47,3 +47,5 @@ VAR_GLOBAL
         NH : STRING(32);
 
 END_VAR
+
+// nao esquecer de mudar a quantidade de publicacoes na biblioteca
