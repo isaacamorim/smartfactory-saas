@@ -259,15 +259,15 @@ meta_oee
 
 
 Regras de acesso implementadas:
-Ação                    Admin       Gerente           Operador
-Ver todas as empresas   ✅          ❌ só a sua       ❌ só a sua
-Criar/editar empresa    ✅          ❌                ❌
-Criar/editar linha      ✅          ✅ (só a sua)     ❌
-Cadastrar máquina nova  ✅          ❌                ❌
-Trocar máquina de linha ✅          ✅ (só a sua)     ❌
-Criar usuários          ✅ qualquer ✅ só operadores  ❌
-Definir metas OEE       ✅          ✅                ❌
-Ver OEE/Dashboard       ✅          ✅                ✅
+Ação                    Admin       Gerente                       Operador
+Ver todas as empresas   ✅          ❌ só a sua                   ❌ só a sua
+Criar/editar empresa    ✅          ❌ nunca                      ❌
+Criar/editar linha      ✅          ✅ (apenas na sua emrpesa)    ❌
+Cadastrar máquina nova  ✅          ❌ Nunca                      ❌
+Trocar máquina de linha ✅          ✅ (nas maquinas da empresa)  ❌
+Criar usuários          ✅ qualquer ✅ só operadores              ❌
+Definir metas OEE       ✅          ✅                            ❌
+Ver OEE/Dashboard       ✅          ✅                            ✅
 
 
 

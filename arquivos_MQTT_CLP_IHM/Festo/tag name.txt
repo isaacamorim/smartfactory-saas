@@ -1,0 +1,108 @@
+Tag                                                         Desc
+
+// Home
+    Application/PersistentVars/udiIHM_CicloPorMinuto        // pacotes por minutos
+    Application/_060_IHM/rProducao_Por_Minuto               // Producao atual
+
+// Home-ciclo
+    Application/PersistentVars/udiContagemPacotesEstatistica    // Total Produzido
+
+// Estatistica_Horario
+
+// Estastisca_Diaria
+    Application/PersistentVars/iTotalTurno[1]       // Produzido_turno1
+    Application/PersistentVars/iTotalTurno[2]       // Produzido_turno2
+    Application/PersistentVars/iTotalTurno[3]       // Produzido_turno3    
+
+// Estatistica_Semanal
+    // Turno 1
+        Application/PersistentVars/iTotalSegunda[1]
+        Application/PersistentVars/iTotalTerca[1]
+        Application/PersistentVars/iTotalQuarta[1]
+        Application/PersistentVars/iTotalQuinta[1]
+        Application/PersistentVars/iTotalSexta[1]
+        Application/PersistentVars/iTotalSabado[1]
+        Application/PersistentVars/iTotalDomingo[1]
+
+    // Turno 2
+        Application/PersistentVars/iTotalSegunda[2]
+        Application/PersistentVars/iTotalTerca[2]
+        Application/PersistentVars/iTotalQuarta[2]
+        Application/PersistentVars/iTotalQuinta[2]
+        Application/PersistentVars/iTotalSexta[2]
+        Application/PersistentVars/iTotalSabado[2]
+        Application/PersistentVars/iTotalDomingo[2]
+
+    // Turno 3
+        Application/PersistentVars/iTotalSegunda[3]
+        Application/PersistentVars/iTotalTerca[3]
+        Application/PersistentVars/iTotalQuarta[3]
+        Application/PersistentVars/iTotalQuinta[3]
+        Application/PersistentVars/iTotalSexta[3]
+        Application/PersistentVars/iTotalSabado[3]
+        Application/PersistentVars/iTotalDomingo[3]
+
+// Seletoras
+
+// Angulos
+    // Coluna Esquerda Angulos
+        Application/PersistentVars/Visualizacao_Receita/Ang_In_MORDACA      // Mordaça
+        Application/PersistentVars/Visualizacao_Receita/Ang_Out_MORDACA     // Mordaça
+
+        Application/PersistentVars/Visualizacao_Receita/Ang_In_SDV           // Solda Vertical
+        Application/PersistentVars/Visualizacao_Receita/Ang_Out_SDV          // Solda Vertical
+
+        Application/PersistentVars/Visualizacao_Receita/Ang_In_Solda_SDV    // Pulso Solda Vertical
+        Application/PersistentVars/Visualizacao_Receita/Ang_Out_Solda_SDV   // Pulso Solda Vertical
+
+        Application/PersistentVars/Visualizacao_Receita/Ang_In_SDH          // Solda Horizontal
+        Application/PersistentVars/Visualizacao_Receita/Ang_Out_SDH         // Solda Horizontal
+
+        Application/PersistentVars/Visualizacao_Receita/Ang_In_Solda_SDH    // Pulso Solda Horizontal
+        Application/PersistentVars/Visualizacao_Receita/Ang_Out_Solda_SDH   // Pulso Solda Horizontal
+
+        // !!! Esfriamento Horizontal // !!!sem tag name
+
+        Application/PersistentVars/Visualizacao_Receita/Ang_In_Datador      // Datador
+        Application/PersistentVars/Visualizacao_Receita/Ang_Out_Datador     // Datador
+
+        // !!! Expulsador       // !!! sem tag name
+
+        // !!! Rejeita Pacote       // !!! sem tag name
+
+
+    // Coluna Esquerda Angulos
+        Application/PersistentVars/Visualizacao_Receita/Ang_In_DosadorGiratorio     // Dosador Rotativo
+        Application/PersistentVars/Visualizacao_Receita/Ang_Out_DosadorGiratorio    // Dosador Rotativo
+
+        // !!! Dosador Gaveta Superior // !!! sem tag name
+
+        // !!! Dosador Gaveta Inferior // !!! sem tag name
+
+        // !!! Balança Multicabeçote // !!! sem tag name
+
+        // !!! Misturador // !!! sem tag name
+
+        // !!! Alimentador // !!! sem tag name
+
+        Application/PersistentVars/Ang_Parada       // Posicao Fim de Ciclo
+
+        // !!! Dosador DGI // !!! sem tag name
+
+        // !!! Dosador de Rosca // !!! sem tag name
+
+// Pesagem-Pacote1
+    Application/PersistentVars/iIHM_PesoLimiteMinimo        // Min. Limite para Expulsador
+    Application/PersistentVars/iIHM_PesoLimiteMaximo        // Max. Limite para Expulsador
+
+    Pesagem-Estatistica-Total
+    Application/PersistentVars/wIHM_TotalProduzido      // Pacotes Analisados
+
+    Application/PersistentVars/diQtdPacotesBons         // Pacotes ok
+    Application/PersistentVars/rPesoTotalBons           // Peso Pacotes ok
+
+    Application/PersistentVars/diQtdPacotesRuins       // Pacotes NOK
+    Application/PersistentVars/rPesoTotalRuins         // Peso Pacotes NOK
+
+    Application/_060_IHM/rIHM_PesoEmbalagem             Peso da rIHM_PesoEmbalagem
+

@@ -7,11 +7,37 @@ import { useState, useEffect } from "react";
 import { NAV_ITEMS } from "../data/mockData";
 
 const VISIBLE = {
-    admin: ["dashboard", "oee", "maquinas", "linhas", "producao", "alarmes", "manutencao", "empresas", "usuarios", "metas", "parametros"],
-    gerente: ["dashboard", "oee", "maquinas", "linhas", "producao", "alarmes", "manutencao", "usuarios", "metas", "parametros"],
-    operador: ["dashboard", "oee", "producao", "alarmes"],
-};
 
+    admin: [
+        "empresa_dashboard",
+        "alarmes",
+        "manutencao",
+
+        "empresas",
+        "linhas",
+        "maquinas",
+        "usuarios",
+        "metas",
+        "parametros"
+    ],
+
+    gerente: [
+        "empresa_dashboard",
+        "alarmes",
+        "manutencao",
+
+        "linhas",
+        "usuarios",
+        "metas",
+        "parametros"
+    ],
+
+    operador: [
+        "empresa_dashboard",
+        "alarmes"
+    ]
+
+};
 export default function Sidebar({ page, setPage, usuario }) {
     const role = usuario?.role ?? "operador";
     const visible = VISIBLE[role] ?? [];

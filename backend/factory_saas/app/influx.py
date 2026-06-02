@@ -1,121 +1,118 @@
-## app/influx.py
+# app/services/metrics_service.py
+# ─── Resumo e agregação de máquinas ───────────────────────────────────────────
 
-import os
-from influxdb_client import InfluxDBClient
-from dotenv import load_dotenv
+from datetime import datetime, timezone
+from app.influx import get_client, INFLUX_BUCKET, query_machines
 
-load_dotenv()
-
-INFLUX_URL    = os.getenv("INFLUX_URL")
-INFLUX_TOKEN  = os.getenv("INFLUX_TOKEN")
-INFLUX_ORG    = os.getenv("INFLUX_ORG")
-INFLUX_BUCKET = os.getenv("INFLUX_BUCKET")
+# ─── SUMMARY ──────────────────────────────────────────────────────────────────
 
 
-def get_influx_client():
-    return InfluxDBClient(url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG)
-
-
-def query_metricas_recentes(serial: str, janela: str = "-1h") -> dict:
+def machine_summary(machine: str) -> dict:
     """
-    Busca os últimos valores de cada field para um serial específico.
-    janela: ex. "-1h", "-24h", "-7d"
+    Retorna status atual de uma máquina + flag online.
+    online = True se o último dado tem < 5 min.
     """
-    client = get_influx_client()
-    query_api = client.query_api()
-
-    query = f'''
-    from(bucket: "{INFLUX_BUCKET}")
-      |> range(start: {janela})
-      |> filter(fn: (r) => r["_measurement"] == "machine_metrics")
-      |> filter(fn: (r) => r["serial"] == "{serial}")
+    flux = f"""
+    from(bucket:"{INFLUX_BUCKET}")
+      |> range(start:-24h)
+      |> filter(fn:(r) => r["_measurement"] == "machine_metrics")
+      |> filter(fn:(r) => r["machine"] == "{machine}")
       |> last()
-      |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-    '''
+    """
 
-    result = {}
-    try:
-        tables = query_api.query(query)
+    data = {}
+    last_seen = None
+
+    with get_client() as client:
+        tables = client.query_api().query(flux)
         for table in tables:
-            for record in table.records:
-                result = record.values
-    except Exception as e:
-        result = {"error": str(e)}
-    finally:
-        client.close()
+            for row in table.records:
+                data[row.get_field()] = row.get_value()
+                last_seen = row.get_time()
+
+    if not data:
+        return {"machine": machine, "online": False, "last_seen": None, "status": {}}
+
+    delta = (
+        datetime.now(timezone.utc) - last_seen.replace(tzinfo=timezone.utc)
+    ).total_seconds()
+
+    return {
+        "machine": machine,
+        "online": delta < 300,
+        "last_seen": last_seen,
+        "status": data,
+    }
+
+
+# ─── OVERVIEW ─────────────────────────────────────────────────────────────────
+
+
+def build_overview() -> list[dict]:
+    """Lista resumida de todas as máquinas."""
+    machines = query_machines()
+
+    result = []
+    for machine in machines:
+        s = machine_summary(machine)
+        result.append(
+            {
+                "machine": s["machine"],
+                "online": s["online"],
+                "last_seen": s["last_seen"],
+                "vel": s["status"].get("vel"),
+                "prod_turno": s["status"].get("prod_turno"),
+                "turno": s["status"].get("turno"),
+                "total": s["status"].get("total"),
+            }
+        )
 
     return result
 
 
-def query_historico(serial: str, field: str, janela: str = "-24h") -> list:
-    """
-    Busca histórico de um campo específico para gráficos.
-    Ex: field = "contador_boas"
-    """
-    client = get_influx_client()
-    query_api = client.query_api()
-
-    query = f'''
-    from(bucket: "{INFLUX_BUCKET}")
-      |> range(start: {janela})
-      |> filter(fn: (r) => r["_measurement"] == "machine_metrics")
-      |> filter(fn: (r) => r["serial"] == "{serial}")
-      |> filter(fn: (r) => r["_field"] == "{field}")
-      |> aggregateWindow(every: 5m, fn: mean, createEmpty: false)
-    '''
-
-    historico = []
-    try:
-        tables = query_api.query(query)
-        for table in tables:
-            for record in table.records:
-                historico.append({
-                    "time": record.get_time().isoformat(),
-                    "value": record.get_value(),
-                })
-    except Exception as e:
-        historico = [{"error": str(e)}]
-    finally:
-        client.close()
-
-    return historico
+# ─── DASHBOARD ────────────────────────────────────────────────────────────────
 
 
-def query_oee_atual(serial: str, janela: str = "-8h") -> dict:
-    """
-    Busca os componentes de OEE calculados pelo Node-RED
-    e já gravados no InfluxDB.
-    """
-    client = get_influx_client()
-    query_api = client.query_api()
+def build_dashboard() -> dict:
+    """Agregado global para tela de dashboard multi-máquina."""
+    dados = build_overview()
+    online = [m for m in dados if m["online"]]
 
-    query = f'''
-    from(bucket: "{INFLUX_BUCKET}")
-      |> range(start: {janela})
-      |> filter(fn: (r) => r["_measurement"] == "machine_metrics")
-      |> filter(fn: (r) => r["serial"] == "{serial}")
-      |> filter(fn: (r) => r["_field"] == "oee" 
-              or r["_field"] == "disponibilidade"
-              or r["_field"] == "performance"
-              or r["_field"] == "qualidade")
-      |> last()
-      |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-    '''
+    return {
+        "machines_total": len(dados),
+        "machines_online": len(online),
+        "machines_offline": len(dados) - len(online),
+        "prod_turno_total": sum(m["prod_turno"] or 0 for m in online),
+        "total_pecas": sum(m["total"] or 0 for m in online),
+        "vel_media": round(sum(m["vel"] or 0 for m in online) / max(len(online), 1), 2),
+        "turnos": {
+            "t1": sum(1 for m in online if m["turno"] == 1),
+            "t2": sum(1 for m in online if m["turno"] == 2),
+            "t3": sum(1 for m in online if m["turno"] == 3),
+        },
+        "offline": [m["machine"] for m in dados if not m["online"]],
+    }
 
-    result = {}
-    try:
-        tables = query_api.query(query)
-        for table in tables:
-            for record in table.records:
-                result = {
-                    "oee":            record.values.get("oee"),
-                    "disponibilidade": record.values.get("disponibilidade"),
-                    "performance":     record.values.get("performance"),
-                    "qualidade":       record.values.get("qualidade"),
-                }
-    except Exception as e:
-        result = {"error": str(e)}
-    finally:
-        client.close()
 
-    return result
+# ─── RANKING ──────────────────────────────────────────────────────────────────
+
+
+def build_ranking() -> list[dict]:
+    """Ranking de máquinas por produção do turno."""
+    machines = query_machines()
+
+    resultado = []
+    for machine in machines:
+        s = machine_summary(machine)
+        status = s.get("status", {})
+        resultado.append(
+            {
+                "machine": machine,
+                "online": s["online"],
+                "prod_turno": status.get("prod_turno", 0),
+                "total": status.get("total", 0),
+                "vel": status.get("vel", 0),
+            }
+        )
+
+    return sorted(resultado, key=lambda x: x["prod_turno"] or 0, reverse=True)

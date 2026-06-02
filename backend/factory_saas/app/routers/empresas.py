@@ -1,3 +1,5 @@
+# app/routers/empresas.py
+
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 from sqlalchemy.orm import Session
@@ -151,3 +153,105 @@ def listar_maquinas_da_linha(
 ):
     verificar_acesso_empresa(empresa_id, current_user)
     return crud.get_maquinas_por_linha(db, linha_id)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PARTE A — COLE NO FINAL DE app/routers/empresas.py
+# ═══════════════════════════════════════════════════════════════════════════════
+# Imports adicionais que precisam estar no topo do empresas.py:
+#
+#   from app.services.metrics_service import build_empresa_dashboard, build_linha_dashboard
+#   from app import crud
+#   from app.database import get_db
+#   from sqlalchemy.orm import Session
+#
+# Se já existirem, não duplicar.
+
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.auth import get_current_user
+from app.models import Usuario
+from app import crud
+from app.services.metrics_service import build_empresa_dashboard, build_linha_dashboard
+
+# ─── GET /empresa/{empresa_id}/dashboard ──────────────────────────────────────
+
+
+@router.get("/{empresa_id}/dashboard")
+def dashboard_empresa(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    """
+    Dashboard agregado de uma empresa.
+    Segurança: admin vê qualquer empresa; gerente/operador só vê a própria.
+    """
+    # Verificação de acesso
+    if current_user.role != "admin" and current_user.empresa_id != empresa_id:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+
+    # Empresa existe?
+    empresa = crud.get_empresa(db, empresa_id)
+    if not empresa:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+
+    # Monta estrutura linhas → serials para o service
+    linhas_db = crud.get_linhas(db, empresa_id)
+    linhas_data = []
+
+    for linha in linhas_db:
+        maquinas = crud.get_maquinas_por_linha(db, linha.id)
+        serials = [m.serial_number for m in maquinas if m.deleted_at is None]
+        linhas_data.append(
+            {
+                "linha_id": linha.id,
+                "nome": linha.nome,
+                "serials": serials,
+            }
+        )
+
+    return build_empresa_dashboard(
+        empresa_id=empresa_id,
+        nome=empresa.nome,
+        linhas_data=linhas_data,
+    )
+
+
+# ─── GET /empresa/{empresa_id}/linhas/{linha_id}/dashboard ────────────────────
+
+
+@router.get("/{empresa_id}/linhas/{linha_id}/dashboard")
+def dashboard_linha(
+    empresa_id: int,
+    linha_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    """
+    Dashboard de uma linha específica dentro da empresa.
+    """
+    # Verificação de acesso
+    if current_user.role != "admin" and current_user.empresa_id != empresa_id:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+
+    empresa = crud.get_empresa(db, empresa_id)
+    if not empresa:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+
+    linha = crud.get_linha(db, linha_id)
+    if not linha or linha.empresa_id != empresa_id:
+        raise HTTPException(status_code=404, detail="Linha não encontrada")
+
+    maquinas = crud.get_maquinas_por_linha(db, linha_id)
+    serials = [m.serial_number for m in maquinas if m.deleted_at is None]
+
+    return build_linha_dashboard(
+        linha_id=linha_id,
+        nome=linha.nome,
+        empresa_id=empresa_id,
+        serials=serials,
+    )
+
+

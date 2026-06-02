@@ -1,3 +1,5 @@
+# app/routers/maquinas.py
+
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 from sqlalchemy.orm import Session
@@ -5,6 +7,7 @@ from app.database import get_db
 from app import crud, schemas
 from app.auth import get_current_user, require_admin, require_gerente_ou_admin, verificar_acesso_empresa
 from app.models import Usuario
+from app.services.metrics_service import build_maquina_resumo
 
 router = APIRouter(prefix="/maquinas", tags=["Máquinas"])
 
@@ -117,3 +120,50 @@ def definir_meta(
         raise HTTPException(status_code=404, detail="Máquina não encontrada")
     verificar_acesso_empresa(maquina.empresa_id, current_user)
     return crud.upsert_meta_oee(db, data)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PARTE B — COLE NO FINAL DE app/routers/maquinas.py
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/{maquina_id}/dashboard")
+def dashboard_maquina(
+    maquina_id:   int,
+    db:           Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    """
+    Dashboard completo de uma máquina individual.
+    Inclui métricas realtime + metas OEE do Postgres.
+    """
+    maquina = crud.get_maquina(db, maquina_id)
+    if not maquina:
+        raise HTTPException(status_code=404, detail="Máquina não encontrada")
+
+    # Verificação de acesso
+    if current_user.role != "admin" and current_user.empresa_id != maquina.empresa_id:
+            raise HTTPException(status_code=403, detail="Acesso negado")
+
+    # Métricas realtime do Influx
+    resumo = build_maquina_resumo(maquina.serial_number)
+
+    # Meta OEE do Postgres
+    meta_db = crud.get_meta_oee(db, maquina_id)
+    meta = None
+    if meta_db:
+        meta = {
+            "meta_producao_hora":   meta_db.meta_producao_hora,
+            "meta_disponibilidade": meta_db.meta_disponibilidade,
+            "meta_performance":     meta_db.meta_performance,
+            "meta_qualidade":       meta_db.meta_qualidade,
+        }
+
+    return {
+        "maquina_id": maquina_id,
+        "modelo":     maquina.modelo,
+        "linha_id":   maquina.linha_id,
+        "empresa_id": maquina.empresa_id,
+        **resumo,
+        "meta": meta,
+    }

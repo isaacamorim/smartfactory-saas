@@ -1,3 +1,5 @@
+# app/schemas.py
+
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import datetime
@@ -150,3 +152,152 @@ class EmpresaComLinhas(EmpresaOut):
         from_attributes = True
 
 LinhaComMaquinas.model_rebuild()
+
+
+# ─── COLE NO FINAL DE app/schemas.py ─────────────────────────────────────────
+# Não alterar nada acima. Apenas adicionar esses schemas.
+
+from typing import Optional, List
+from pydantic import BaseModel
+
+# ─── ESTADO INDUSTRIAL DA MÁQUINA ─────────────────────────────────────────────
+# ciclo=1 → PRODUZINDO | auto=1 → PRONTA | manual=1 → MANUAL | offline → OFFLINE
+
+
+class MaquinaResumoOut(BaseModel):
+    """Resumo de uma máquina para cards e listas."""
+
+    serial: str
+    modelo: str
+    online: bool
+    estado: str  # PRODUZINDO | PRONTA | MANUAL | OFFLINE
+    vel: float
+    pac_min: float
+    prod_turno: float
+    total: float
+    turno_atual: int
+    oee: float
+    performance: float
+    qualidade: float
+    disponibilidade: float
+
+
+class LinhaResumoOut(BaseModel):
+    """Resumo de uma linha para o dashboard de empresa."""
+
+    linha_id: int
+    nome: str
+    machines_total: int
+    machines_online: int
+    machines_offline: int
+    oee_medio: float
+    producao_total: float
+    vel_media: float
+    maquinas: List[MaquinaResumoOut] = []
+
+
+class AlertaOut(BaseModel):
+    machine: str
+    tipo: str
+    severity: str
+    mensagem: str
+
+
+# ─── DASHBOARD EMPRESA ────────────────────────────────────────────────────────
+
+
+class TurnosEmpresaOut(BaseModel):
+    t1_total: float
+    t2_total: float
+    t3_total: float
+    turno_ativo: int  # turno com mais máquinas ativas (1, 2 ou 3)
+
+
+class EmpresaDashboardOut(BaseModel):
+    empresa_id: int
+    nome: str
+    machines_total: int
+    machines_online: int
+    machines_offline: int
+    oee_medio: float
+    producao_total: float
+    vel_media: float
+    turnos: TurnosEmpresaOut
+    linhas: List[LinhaResumoOut] = []
+    alertas: List[AlertaOut] = []
+
+
+# ─── DASHBOARD LINHA ──────────────────────────────────────────────────────────
+
+
+class LinhaDashboardOut(BaseModel):
+    linha_id: int
+    nome: str
+    empresa_id: int
+    machines_total: int
+    machines_online: int
+    machines_offline: int
+    oee_medio: float
+    producao_total: float
+    vel_media: float
+    maquinas: List[MaquinaResumoOut] = []
+
+
+# ─── DASHBOARD MÁQUINA ────────────────────────────────────────────────────────
+
+
+class MetaOEEResumoOut(BaseModel):
+    meta_producao_hora: float
+    meta_disponibilidade: float
+    meta_performance: float
+    meta_qualidade: float
+
+
+class MaquinaDashboardOut(BaseModel):
+    # identidade
+    maquina_id: int
+    serial: str
+    modelo: str
+    linha_id: int
+    empresa_id: int
+
+    # estado
+    online: bool
+    estado: str  # PRODUZINDO | PRONTA | MANUAL | OFFLINE
+
+    # produção
+    vel: float
+    pac_min: float
+    prod_turno: float
+    total: float
+    turno_atual: int
+    t1: float
+    t2: float
+    t3: float
+
+    # qualidade
+    ok: float
+    nok: float
+
+    # OEE
+    oee: float
+    disponibilidade: float
+    performance: float
+    qualidade: float
+
+    # pesagem
+    peso_atual: float  # liq_scaime / 10 em kg
+    peso_medio: float  # media em g
+    peso_min: float
+    peso_max: float
+    estavel: bool
+    tol_min: float
+    tol_max: float
+    peso_ref: float
+
+    # forecast
+    previsao_turno: float
+    media_hora: float
+
+    # metas do Postgres
+    meta: Optional[MetaOEEResumoOut] = None

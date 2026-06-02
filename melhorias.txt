@@ -1,6 +1,4 @@
 
-administrador poder criar novos administradores, mas acho q so pertencentes a novo horizonte
-
 nao sei se daria pra colocar um SSO, so q teria q ser apenas para contas cadastrasdas
 
 no topo tem MQTT INFLUX API verde dizendo q esta ativo os servidores, mas nem sempre esta atulizado, ent queria q ficasse sempre mostrando o status real e talvez colocar em outro campo tipo confiracoes do oee sla, nao sei se ainda vamos ter algum outro campo de configuracao, ai talvez seja a solucao colocar la, mas em fim em outro lugar
@@ -17,3 +15,154 @@ Prevê falhas: inteligência analítica identifica desvios de operação.
 
 Centraliza informações: apresenta o histórico de todos os equipamentos conectados em uma única interface simples e intuitiva.
 
+
+
+
+
+---
+
+### 4. Skeleton loading
+
+Ao invés:
+
+```txt
+Sincronizando...
+```
+
+usar:
+
+```txt
+▭▭▭▭
+▭▭▭▭
+▭▭▭▭
+```
+
+fica profissional.
+
+---
+
+
+### Metas OEE
+
+Gerente/Admin:
+
+```txt
+Meta produção/h
+Meta disponibilidade
+Meta performance
+Meta qualidade
+```
+
+---
+
+# FASE 3 — Alertas reais
+
+Hoje:
+
+```txt
+Sem produção
+Offline
+```
+
+Depois:
+
+Alertas automáticos:
+
+```txt
+Peso fora faixa
+Motor quente
+Parada > 5min
+Performance < meta
+```
+
+---
+
+# FASE 4 — Tempo real de verdade
+
+Hoje:
+
+refresh 30s
+
+Depois:
+
+Websocket
+
+```txt
+MQTT
+↓
+Backend
+↓
+Websocket
+↓
+Frontend instantâneo
+```
+
+sem refresh.
+
+---
+
+# FASE 5 — Histórico
+
+Muito importante.
+
+Tela:
+
+```txt
+Empresa
+↓
+Linha
+↓
+Máquina
+↓
+Últimos 7 dias
+Últimos 30
+Últimos 90
+```
+
+Gráficos:
+
+OEE diário
+
+Produção diária
+
+Paradas
+
+---
+
+# FASE 6 — Mobile
+
+Operador abre celular:
+
+```txt
+Máquina
+Status
+Alertas
+```
+
+---
+
+# FASE 7 — Comercial (SaaS de verdade)
+
+Depois vira:
+
+```txt
+Plano Básico
+1 empresa
+5 máquinas
+
+Plano Pro
+50 máquinas
+
+Enterprise
+Ilimitado
+```
+
+---
+
+Eu faria **agora imediatamente**:
+
+✅ Arrumar EmpresaSelector
+✅ Dashboard máquina (gráficos)
+✅ Finalizar cadastros (empresa/linha/máquina/usuário/metas)
+
+Porque isso já vira uma **versão demonstrável** pra mostrar pra empresa ou cliente.

@@ -20,18 +20,67 @@ export const MANUTENCAO = [
 ];
 
 export const NAV_ITEMS = [
-  { section: "OPERAÇÃO" },
-  { id:"dashboard",  icon:"◈", label:"Dashboard"  },
-  { id:"oee",        icon:"◎", label:"OEE"        },
-  { id:"producao",   icon:"≋", label:"Produção"   },
-  { id:"alarmes",    icon:"△", label:"Alarmes",   badge:2, badgeColor:"var(--red)"   },
-  { id:"manutencao", icon:"⚙", label:"Manutenção" },
-  { section: "CADASTROS" },
-  { id:"empresas",   icon:"⬜", label:"Empresas"  },
-  { id:"linhas",     icon:"—", label:"Linhas"     },
-  { id:"maquinas",   icon:"⬡", label:"Máquinas",  badge:3, badgeColor:"var(--green)" },
-  { id:"usuarios",   icon:"◻", label:"Usuários"   },
-  { id:"metas",      icon:"✦", label:"Metas OEE"  },
-  { section: "MÁQUINA" },
-  { id:"parametros", icon:"⊞", label:"Parâmetros CLP" },
+
+  {
+    section: "Operação"
+  },
+
+  {
+    id: "empresa_dashboard",
+    label: "Dashboard",
+    icon: "📊"
+  },
+
+  {
+    id: "alarmes",
+    label: "Alarmes",
+    icon: "🚨"
+  },
+
+  {
+    id: "manutencao",
+    label: "Manutenção",
+    icon: "🔧"
+  },
+
+  {
+    section: "Cadastros"
+  },
+
+  {
+    id: "empresas",
+    label: "Empresas",
+    icon: "🏭"
+  },
+
+  {
+    id: "linhas",
+    label: "Linhas",
+    icon: "📂"
+  },
+
+  {
+    id: "maquinas",
+    label: "Máquinas",
+    icon: "⚙"
+  },
+
+  {
+    id: "usuarios",
+    label: "Usuários",
+    icon: "👤"
+  },
+
+  {
+    id: "metas",
+    label: "Metas OEE",
+    icon: "🎯"
+  },
+
+  {
+    id: "parametros",
+    label: "Parâmetros CLP",
+    icon: "🛠"
+  }
+
 ];

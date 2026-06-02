@@ -25,3 +25,23 @@ mosquitto_sub -h localhost -t "XP340/#" -u clp_eva1000 -P 123456 -v
 mosquitto_pub -h localhost -t "XP340/teste" -m "1" -u clp_eva1000 -P 123456
 
 mosquitto_sub -h localhost -t "#" -u clp_eva1000 -P 123456 -v
+
+
+
+
+
+
+
+
+cd /opt/smartfactory-saas/frontend/smartfactory-web
+
+rm -rf node_modules/.vite
+rm -rf dist
+
+npm run build
+
+nohup npm run dev -- \
+  --host 0.0.0.0 \
+  --port 3001 \
+  --strictPort \
+  > frontend.log 2>&1 &

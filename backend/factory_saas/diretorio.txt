@@ -1,11 +1,8 @@
 app/
+├── influx.py                    ← conexão + query_last + query_machines
 ├── routers/
-│      metrics.py         ← só endpoints
-
-├── services/
-│      influx_service.py  ← consultas influx
-│      metrics_service.py ← overview/dashboard/ranking
-│      oee_service.py
-│      alert_service.py
-
-├── influx.py             ← conexão influx (já existe)
+│   └── metrics.py               ← só @router.get(...), zero lógica
+└── services/
+    ├── metrics_service.py       ← machine_summary, overview, dashboard, ranking
+    ├── oee_service.py           ← oee, history, production, hourly, forecast, target, stoppages
+    └── alert_service.py         ← alerts
